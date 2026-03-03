@@ -1,0 +1,8 @@
+requests
+psutil
+matplotlib
+colorama
+cryptography
+PyNaCl
+kucoin-python
+python-kraken-sdk

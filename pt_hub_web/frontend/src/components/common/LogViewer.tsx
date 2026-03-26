@@ -18,13 +18,14 @@ export function LogViewer({ logs, className = '', autoScroll = true }: LogViewer
   return (
     <div
       ref={containerRef}
-      className={`overflow-auto bg-dark-panel p-3 font-mono text-xs leading-relaxed ${className}`}
+      className={`overflow-auto p-4 font-mono text-xs leading-relaxed rounded-xl ${className}`}
+      style={{ background: '#18181b', border: '1px solid #27272a' }}
     >
       {logs.length === 0 ? (
-        <span className="text-dark-muted">No logs yet...</span>
+        <span style={{ color: '#a1a1aa' }}>No logs yet...</span>
       ) : (
         logs.map((log, i) => (
-          <div key={i} className="text-dark-fg whitespace-pre-wrap break-all">
+          <div key={i} className="whitespace-pre-wrap break-all" style={{ color: '#ECEDEE', opacity: 0.75 }}>
             {log}
           </div>
         ))

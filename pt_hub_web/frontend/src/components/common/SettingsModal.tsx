@@ -90,64 +90,78 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-dark-bg2 border border-dark-border rounded-lg shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border">
-          <h2 className="text-sm font-semibold text-dark-fg">Manage Tickers</h2>
-          <button onClick={onClose} className="text-dark-muted hover:text-dark-fg text-lg leading-none">&times;</button>
+      <div className="relative w-full max-w-md rounded-xl shadow-lg overflow-hidden" style={{ background: '#18181b' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #27272a' }}>
+          <h2 className="text-sm font-semibold" style={{ color: '#ECEDEE' }}>Manage Tickers</h2>
+          <button onClick={onClose} className="text-lg leading-none transition-colors" style={{ color: '#a1a1aa' }}>&times;</button>
         </div>
 
-        <div className="px-4 pt-3 relative">
+        {/* Search */}
+        <div className="px-5 pt-4 relative">
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search ticker (e.g. AAPL, VNM, BHP.AX)..."
-            className="w-full px-3 py-2 text-sm bg-dark-panel border border-dark-border rounded text-dark-fg placeholder-dark-muted focus:outline-none focus:border-dark-accent"
+            className="w-full text-sm px-3 py-2 rounded-lg outline-none transition-colors"
+            style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE' }}
           />
           {searching && (
-            <span className="absolute right-6 top-5 text-xs text-dark-muted">Searching...</span>
+            <span className="absolute right-7 top-6 text-xs" style={{ color: '#a1a1aa' }}>Searching...</span>
           )}
 
           {results.length > 0 && (
-            <div className="absolute left-4 right-4 mt-1 bg-dark-panel border border-dark-border rounded shadow-lg max-h-48 overflow-y-auto z-10">
+            <div className="absolute left-5 right-5 mt-1 rounded-xl max-h-48 overflow-y-auto z-10 p-1 shadow-lg" style={{ background: '#18181b', border: '1px solid #27272a' }}>
               {results.map((r) => (
                 <button
                   key={r.symbol}
                   onClick={() => addTicker(r.symbol)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-dark-panel2 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-left rounded-lg transition-colors"
+                  style={{ color: '#ECEDEE' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#27272a')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
                   <div>
-                    <span className="text-sm font-medium text-dark-accent">{r.symbol}</span>
-                    <span className="text-xs text-dark-muted ml-2">{r.name}</span>
+                    <span className="text-sm font-medium" style={{ color: '#17c964' }}>{r.symbol}</span>
+                    <span className="text-xs ml-2" style={{ color: '#a1a1aa' }}>{r.name}</span>
                   </div>
-                  {r.exchange && <span className="text-xs text-dark-muted">{r.exchange}</span>}
+                  {r.exchange && <span className="text-xs" style={{ color: '#a1a1aa' }}>{r.exchange}</span>}
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="px-4 py-3">
-          <span className="text-xs text-dark-muted">Current tickers ({tickers.length})</span>
-          <div className="mt-2 flex flex-wrap gap-2">
+        {/* Current Tickers */}
+        <div className="px-5 py-4">
+          <span className="text-xs font-medium" style={{ color: '#a1a1aa' }}>Current tickers ({tickers.length})</span>
+          <div className="mt-2.5 flex flex-wrap gap-2">
             {tickers.map((ticker) => (
-              <span key={ticker} className="inline-flex items-center gap-1 px-2.5 py-1 text-sm bg-dark-panel border border-dark-border rounded">
-                <span className="text-dark-fg">{ticker}</span>
-                <button onClick={() => removeTicker(ticker)} className="text-dark-muted hover:text-red-500 text-xs leading-none ml-1">&times;</button>
+              <span key={ticker} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full" style={{ background: '#27272a' }}>
+                <span style={{ color: '#ECEDEE' }}>{ticker}</span>
+                <button onClick={() => removeTicker(ticker)} className="text-xs leading-none ml-0.5 transition-colors" style={{ color: '#a1a1aa' }}>&times;</button>
               </span>
             ))}
-            {tickers.length === 0 && <span className="text-xs text-dark-muted">No tickers added</span>}
+            {tickers.length === 0 && <span className="text-xs" style={{ color: '#a1a1aa' }}>No tickers added</span>}
           </div>
         </div>
 
-        {error && <div className="px-4 pb-2 text-xs text-red-500">{error}</div>}
+        {error && <div className="px-5 pb-2 text-xs" style={{ color: '#f31260' }}>{error}</div>}
 
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-dark-border">
-          <button onClick={onClose} className="px-4 py-1.5 text-xs text-dark-muted hover:text-dark-fg rounded">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 text-xs font-medium bg-dark-accent text-dark-bg rounded hover:bg-opacity-80 disabled:opacity-50">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-5 py-4" style={{ borderTop: '1px solid #27272a' }}>
+          <button onClick={onClose} className="px-4 py-2 text-xs rounded-lg transition-colors" style={{ color: '#a1a1aa' }}>Cancel</button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+            style={{ background: '#006FEE', color: '#ECEDEE' }}
+          >
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>

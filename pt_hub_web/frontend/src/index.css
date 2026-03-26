@@ -3,16 +3,38 @@
 @tailwind utilities;
 
 :root {
-  --dark-bg: #070B10;
-  --dark-bg2: #0B1220;
-  --dark-panel: #0E1626;
-  --dark-panel2: #121C2F;
-  --dark-border: #243044;
-  --dark-fg: #C7D1DB;
-  --dark-muted: #8B949E;
-  --dark-accent: #00FF66;
-  --dark-accent2: #00E5FF;
-  --dark-select: #17324A;
+  /* NextUI v2 Dark Theme — exact palette */
+  --background: #000000;
+  --foreground: #ECEDEE;
+  --surface: #18181b;           /* content1 / default-50 in dark */
+  --surface-secondary: #27272a; /* content2 */
+  --surface-tertiary: #3f3f46;  /* content3 */
+  --overlay: #000000;
+  --muted: #a1a1aa;             /* zinc-400 */
+  --default: #3f3f46;           /* zinc-700 */
+  --border: rgba(255, 255, 255, 0.15); /* divider */
+  --separator: rgba(255, 255, 255, 0.15);
+  --accent: #006FEE;            /* blue-500 primary */
+  --accent-foreground: #ffffff;
+  --accent-100: #001731;        /* primary-100 in dark mode (blue-900 swapped) */
+  --accent-500: #006FEE;        /* primary-500 */
+  --secondary: #7828c8;         /* purple-500 */
+  --success: #17c964;           /* green-500 */
+  --warning: #f5a524;           /* yellow-500 */
+  --danger: #f31260;            /* red-500 */
+  --field-bg: #18181b;
+
+  /* Legacy aliases */
+  --dark-bg: #000000;
+  --dark-bg2: #18181b;
+  --dark-panel: #18181b;
+  --dark-panel2: #27272a;
+  --dark-border: rgba(255, 255, 255, 0.15);
+  --dark-fg: #ECEDEE;
+  --dark-muted: #a1a1aa;
+  --dark-accent: #006FEE;
+  --dark-accent2: #338ef7;
+  --dark-select: rgba(0, 111, 238, 0.15);
 }
 
 * {
@@ -22,10 +44,10 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--dark-bg);
-  color: var(--dark-fg);
-  font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-  font-size: 13px;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -39,16 +61,40 @@ body {
 
 /* Hide scrollbars but keep scrolling */
 * {
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 
 ::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
+  display: none;
 }
 
-/* Custom classes */
+/* ============================================
+   Surface Utilities
+   ============================================ */
+
+.surface {
+  background-color: var(--surface);
+  border-radius: 0.75rem;
+}
+
+.surface-card {
+  background-color: var(--surface);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.surface-elevated {
+  background-color: var(--surface);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   Custom Utility Classes
+   ============================================ */
+
 .text-accent {
-  color: var(--dark-accent);
+  color: var(--accent);
 }
 
 .text-accent2 {
@@ -56,77 +102,123 @@ body {
 }
 
 .bg-panel {
-  background-color: var(--dark-panel);
+  background-color: var(--surface);
 }
 
 .border-dark {
-  border-color: var(--dark-border);
+  border-color: var(--border);
 }
 
-/* Log viewer */
+/* ============================================
+   Log Viewer
+   ============================================ */
+
 .log-viewer {
+  font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
   font-size: 11px;
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-/* Table styling */
+/* ============================================
+   Data Table
+   ============================================ */
+
 .data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .data-table th,
 .data-table td {
-  padding: 6px 10px;
+  padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--dark-border);
 }
 
 .data-table th {
-  background-color: var(--dark-bg2);
-  color: var(--dark-muted);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
 }
 
-.data-table tr:hover {
-  background-color: var(--dark-panel2);
+.data-table td {
+  border-bottom: 1px solid var(--separator);
 }
 
-/* Button styling */
+.data-table tr:hover td {
+  background: var(--surface-secondary);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
 .btn {
-  @apply px-4 py-2 rounded font-medium transition-colors;
+  @apply px-4 py-2 font-medium transition-all duration-200;
+  border-radius: 0.75rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .btn-primary {
-  @apply bg-dark-accent text-dark-bg hover:bg-opacity-80;
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  border: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 0 0 3px rgba(0, 111, 238, 0.25);
 }
 
 .btn-secondary {
-  @apply bg-dark-panel2 text-dark-fg border border-dark-border hover:bg-dark-select;
+  background-color: var(--default);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--surface-secondary);
 }
 
 .btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700;
+  background-color: var(--danger);
+  color: white;
+  border: none;
 }
 
-/* Status indicators */
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+/* ============================================
+   Status Indicators
+   ============================================ */
+
 .status-dot {
   @apply w-2 h-2 rounded-full inline-block mr-2;
 }
 
 .status-dot.running {
-  @apply bg-dark-accent animate-pulse;
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(23, 201, 100, 0.5);
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .status-dot.stopped {
-  @apply bg-dark-muted;
+  background: var(--muted);
 }
 
-/* Indeterminate progress bar animation */
+/* ============================================
+   Animations
+   ============================================ */
+
 @keyframes indeterminate {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
@@ -134,4 +226,176 @@ body {
 
 .animate-indeterminate {
   animation: indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================
+   Form Inputs
+   ============================================ */
+
+.field-input {
+  background-color: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--foreground);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.field-input::placeholder {
+  color: var(--muted);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 111, 238, 0.15);
+}
+
+/* Legacy alias */
+.glass-input {
+  background-color: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--foreground);
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.glass-input::placeholder {
+  color: var(--muted);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 111, 238, 0.15);
+}
+
+/* ============================================
+   Sidebar
+   ============================================ */
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
+  cursor: pointer;
+  position: relative;
+}
+
+.sidebar-item:hover {
+  background-color: var(--surface-tertiary);
+  color: var(--foreground);
+}
+
+.sidebar-item.active {
+  background-color: var(--accent-100);
+  color: var(--foreground);
+}
+
+.sidebar-item.active svg path {
+  stroke: var(--accent-500);
+}
+
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background-color: var(--accent-500);
+}
+
+/* ============================================
+   Candle Chart Loading Animation
+   Credit: Uiverse.io by bilal_9731
+   ============================================ */
+
+.candle-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background: transparent;
+}
+
+.candle-chart {
+  display: flex;
+  align-items: flex-end;
+  height: 80px;
+  gap: 4px;
+}
+
+.candle {
+  width: 6px;
+  height: 110%;
+  position: relative;
+  animation: candle-fade 2.6s infinite ease-in-out;
+  filter: drop-shadow(0 0 2.7px rgba(255, 255, 255, 0.6));
+}
+
+.candle::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  bottom: var(--b);
+  height: var(--h);
+  border-radius: 1px;
+}
+
+.candle::before {
+  content: "";
+  position: absolute;
+  left: 63%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: rgba(255, 255, 255, 0.8);
+  bottom: var(--wb);
+  height: var(--wh);
+}
+
+.candle:nth-child(1)  { --b: 7.1%;   --h: 18.93%; --wb: 0%;     --wh: 31.95%; animation-delay: 0s; }
+.candle:nth-child(2)  { --b: 26.04%; --h: 2.37%;  --wb: 19.41%; --wh: 14.91%; animation-delay: 0.065s; }
+.candle:nth-child(3)  { --b: 28.64%; --h: 4.5%;   --wb: 16.92%; --wh: 21.66%; animation-delay: 0.13s; }
+.candle:nth-child(4)  { --b: 31.42%; --h: 3.43%;  --wb: 19.76%; --wh: 27.93%; animation-delay: 0.195s; }
+.candle:nth-child(5)  { --b: 31.42%; --h: 15.44%; --wb: 27.43%; --wh: 28.07%; animation-delay: 0.26s; }
+.candle:nth-child(6)  { --b: 46.54%; --h: 0.28%;  --wb: 43.43%; --wh: 24.38%; animation-delay: 0.325s; }
+.candle:nth-child(7)  { --b: 35.86%; --h: 8.7%;   --wb: 29.7%;  --wh: 24.5%;  animation-delay: 0.39s; }
+.candle:nth-child(8)  { --b: 11.67%; --h: 24.19%; --wb: 5.33%;  --wh: 31.83%; animation-delay: 0.455s; }
+.candle:nth-child(9)  { --b: 11.83%; --h: 15.1%;  --wb: 7.93%;  --wh: 24.97%; animation-delay: 0.52s; }
+.candle:nth-child(10) { --b: 27.81%; --h: 12.04%; --wb: 27.69%; --wh: 28.17%; animation-delay: 0.585s; }
+.candle:nth-child(11) { --b: 39.85%; --h: 28.25%; --wb: 39.53%; --wh: 28.58%; animation-delay: 0.65s; }
+.candle:nth-child(12) { --b: 70.8%;  --h: 6.27%;  --wb: 60.96%; --wh: 24.84%; animation-delay: 0.715s; }
+.candle:nth-child(13) { --b: 75.8%;  --h: 2.71%;  --wb: 68.38%; --wh: 31.62%; animation-delay: 0.78s; }
+.candle:nth-child(14) { --b: 67.23%; --h: 8.71%;  --wb: 64.8%;  --wh: 24.97%; animation-delay: 0.845s; }
+.candle:nth-child(15) { --b: 67.81%; --h: 7.85%;  --wb: 57.54%; --wh: 27.55%; animation-delay: 0.91s; }
+.candle:nth-child(16) { --b: 70.08%; --h: 6.14%;  --wb: 55.68%; --wh: 21.83%; animation-delay: 0.975s; }
+.candle:nth-child(17) { --b: 66.39%; --h: 3.69%;  --wb: 58.11%; --wh: 26.11%; animation-delay: 1.04s; }
+.candle:nth-child(18) { --b: 64.8%;  --h: 9.78%;  --wb: 45.47%; --wh: 29.61%; animation-delay: 1.105s; }
+
+@keyframes candle-fade {
+  0%  { opacity: 0; transform: scaleY(0); }
+  10% { opacity: 1; transform: scaleY(1.5); }
+  50% { opacity: 1; transform: scaleY(1.35); }
+  70% { opacity: 0; transform: scaleY(1.5); }
+  100%{ opacity: 0; transform: scaleY(0); }
 }

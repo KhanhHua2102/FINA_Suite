@@ -43,28 +43,34 @@ export function DraggableTickerBar({ selectedTicker, onSelect, children }: Props
   };
 
   return (
-    <div className="flex items-center justify-between gap-2 p-3 border-b border-dark-border bg-dark-bg2">
-      <div className="flex items-center gap-1 flex-wrap">
-        {tickers.map((ticker, i) => (
-          <button
-            key={ticker}
-            draggable
-            onDragStart={(e) => handleDragStart(e, i)}
-            onDragOver={(e) => handleDragOver(e, i)}
-            onDrop={(e) => handleDrop(e, i)}
-            onDragEnd={handleDragEnd}
-            onClick={() => onSelect(ticker)}
-            className={`px-4 py-2 text-sm font-medium rounded transition-colors cursor-grab active:cursor-grabbing select-none ${
-              selectedTicker === ticker
-                ? 'bg-dark-accent text-white'
-                : 'bg-dark-panel text-dark-muted hover:text-dark-fg hover:bg-dark-panel2'
-            } ${dragIndex === i ? 'opacity-50' : ''} ${
-              overIndex === i ? 'ring-2 ring-dark-accent' : ''
-            }`}
-          >
-            {ticker}
-          </button>
-        ))}
+    <div
+      className="flex items-center justify-between gap-2 p-3 rounded-t-xl"
+      style={{ background: '#18181b', borderBottom: '1px solid #27272a' }}
+    >
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {tickers.map((ticker, i) => {
+          const isActive = selectedTicker === ticker;
+          return (
+            <button
+              key={ticker}
+              draggable
+              onDragStart={(e) => handleDragStart(e, i)}
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDrop={(e) => handleDrop(e, i)}
+              onDragEnd={handleDragEnd}
+              onClick={() => onSelect(ticker)}
+              className={`px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 cursor-grab active:cursor-grabbing select-none ${
+                dragIndex === i ? 'opacity-50' : ''
+              } ${overIndex === i ? 'ring-2 ring-indigo-400/40' : ''}`}
+              style={{
+                background: isActive ? '#006FEE' : '#27272a',
+                color: isActive ? '#ffffff' : '#a1a1aa',
+              }}
+            >
+              {ticker}
+            </button>
+          );
+        })}
       </div>
       {children}
     </div>

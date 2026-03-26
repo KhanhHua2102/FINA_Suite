@@ -45,24 +45,42 @@ export function AnalysisProgressBar({ ticker, logs, startTime }: Props) {
   };
 
   return (
-    <div className="bg-dark-panel border border-dark-border rounded-lg p-4 space-y-3">
+    <div
+      className="rounded-xl p-4 space-y-3"
+      style={{ background: '#18181b', border: '1px solid #27272a' }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-dark-fg font-medium flex items-center gap-2">
-          <div className="animate-spin w-4 h-4 border-2 border-dark-accent border-t-transparent rounded-full" />
+        <span
+          className="text-sm font-medium flex items-center gap-2"
+          style={{ color: '#ECEDEE' }}
+        >
+          <div
+            className="animate-spin w-4 h-4 rounded-full"
+            style={{ border: '2px solid #006FEE', borderTopColor: 'transparent' }}
+          />
           Analyzing {ticker}
         </span>
-        <span className="text-xs text-dark-muted font-mono">
+        <span
+          className="text-xs font-mono"
+          style={{ color: '#a1a1aa' }}
+        >
           {elapsed > 0 && `${elapsed}s elapsed`}
           {remaining > 0 && elapsed > 5 && ` · ${formatTime(remaining)} remaining`}
         </span>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-2 bg-dark-bg rounded-full overflow-hidden">
+      <div
+        className="w-full h-2 rounded-full overflow-hidden"
+        style={{ backgroundColor: '#27272a' }}
+      >
         <div
-          className="h-full bg-dark-accent rounded-full transition-all duration-700"
-          style={{ width: `${progressPct}%` }}
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${progressPct}%`,
+            backgroundColor: '#006FEE',
+          }}
         />
       </div>
 
@@ -73,12 +91,27 @@ export function AnalysisProgressBar({ ticker, logs, startTime }: Props) {
           const isActive = i === currentStage;
           return (
             <div key={stage.key} className="flex-1">
-              <div className={`h-1 rounded-full mb-1 ${
-                isDone ? 'bg-dark-accent' : isActive ? 'bg-dark-accent/50 animate-pulse' : 'bg-dark-bg'
-              }`} />
-              <p className={`text-[10px] text-center truncate ${
-                isActive ? 'text-dark-accent font-medium' : isDone ? 'text-dark-muted' : 'text-dark-muted/40'
-              }`}>
+              <div
+                className={`h-1 rounded-full mb-1 ${isActive ? 'animate-pulse' : ''}`}
+                style={{
+                  backgroundColor: isDone
+                    ? '#006FEE'
+                    : isActive
+                      ? 'rgba(99,102,241,0.5)'
+                      : '#27272a',
+                }}
+              />
+              <p
+                className="text-[10px] text-center truncate"
+                style={{
+                  color: isActive
+                    ? '#006FEE'
+                    : isDone
+                      ? '#a1a1aa'
+                      : 'rgba(161,161,170,0.4)',
+                  fontWeight: isActive ? 500 : 400,
+                }}
+              >
                 {stage.label}
               </p>
             </div>

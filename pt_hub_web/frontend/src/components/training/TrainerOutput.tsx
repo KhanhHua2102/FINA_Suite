@@ -46,12 +46,10 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
   const progress = new Map<string, TickerProgress>();
 
   for (const log of logs) {
-    // Extract ticker prefix added by store: [GLOB.AX] message content
     const prefixMatch = log.match(/^\[([^\]]+)\]\s*(.*)/s);
     const ticker = prefixMatch ? prefixMatch[1] : null;
     const content = prefixMatch ? prefixMatch[2] : log;
 
-    // [TRAINER] Starting training for X
     const startMatch = content.match(/\[TRAINER\] Starting training for (.+)/);
     if (startMatch) {
       const t = ticker || startMatch[1];
@@ -61,7 +59,6 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // [TRAINER] Downloading {timeframe} data for {ticker}...
     const dlMatch = content.match(/\[TRAINER\] Downloading (.+) data for (.+)\.\.\./);
     if (dlMatch) {
       const t = ticker || dlMatch[2];
@@ -75,7 +72,6 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // [TRAINER] Download progress: 12.50% (12500/100000)
     const progMatch = content.match(/\[TRAINER\] Download progress: ([\d.]+)% \((\d+)\/(\d+)\)/);
     if (progMatch && ticker) {
       const p = ensureTicker(progress, ticker);
@@ -85,14 +81,12 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // [TRAINER] No more data available
     if (content.match(/\[TRAINER\] No more data available/) && ticker) {
       const p = ensureTicker(progress, ticker);
       p.downloadPct = 100;
       continue;
     }
 
-    // Total Candles: N
     const totalMatch = content.match(/Total Candles:\s*(\d+)/);
     if (totalMatch && ticker) {
       const p = ensureTicker(progress, ticker);
@@ -102,7 +96,6 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // current candle: N
     const currentMatch = content.match(/current candle:\s*(\d+)/);
     if (currentMatch && ticker) {
       const p = ensureTicker(progress, ticker);
@@ -112,7 +105,6 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // Bounce Accuracy
     const accMatch = content.match(/Bounce Accuracy.*?:\s*([\d.]+)/);
     if (accMatch && ticker) {
       const p = ensureTicker(progress, ticker);
@@ -120,7 +112,6 @@ function parseProgress(logs: string[]): Map<string, TickerProgress> {
       continue;
     }
 
-    // Finished processing
     if (content.match(/finished processing|Processed all|Finished processing all/) && ticker) {
       const p = ensureTicker(progress, ticker);
       p.phase = 'finished';
@@ -188,39 +179,42 @@ function ProgressBar({ progress }: { progress: TickerProgress }) {
   const hasProgress = pct > 0 || phase === 'finished';
   const isIndeterminate = isDownloading && downloadPct <= 0;
 
+  const barColor = phase === 'finished'
+    ? '#17c964'
+    : isDownloading
+      ? '#f5a524'
+      : '#006FEE';
+
   return (
-    <div className="px-4 py-3 border-b border-dark-border last:border-b-0">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-sm font-medium text-dark-fg">{ticker}</span>
-        <div className="flex items-center gap-3 text-xs text-dark-muted">
+    <div className="px-5 py-3.5" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium" style={{ color: '#ECEDEE' }}>{ticker}</span>
+        <div className="flex items-center gap-3 text-xs font-mono" style={{ color: '#a1a1aa' }}>
           {accuracy !== null && (
-            <span>Accuracy: {accuracy}%</span>
+            <span>Accuracy: <span style={{ color: '#17c964' }}>{accuracy}%</span></span>
           )}
           {(isDownloading || isTraining) && eta !== '--' && (
             <span>ETA: {eta}</span>
           )}
-          <span className={phase === 'finished' ? 'text-dark-accent' : ''}>
+          <span style={{ color: phase === 'finished' ? '#17c964' : undefined }}>
             {hasProgress ? `${pct}%` : ''}
           </span>
         </div>
       </div>
-      <div className="w-full h-2 bg-dark-panel2 rounded-full overflow-hidden">
+      <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#27272a' }}>
         {isIndeterminate ? (
-          <div className="h-full w-1/3 bg-yellow-500/70 rounded-full animate-indeterminate" />
+          <div
+            className="h-full w-1/3 rounded-full animate-indeterminate"
+            style={{ background: '#f5a524', opacity: 0.7 }}
+          />
         ) : (
           <div
-            className={`h-full rounded-full transition-all duration-300 ${
-              phase === 'finished'
-                ? 'bg-dark-accent'
-                : isDownloading
-                  ? 'bg-yellow-500'
-                  : 'bg-blue-500'
-            }`}
-            style={{ width: `${pct}%` }}
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${pct}%`, background: barColor }}
           />
         )}
       </div>
-      <div className="mt-1 text-xs text-dark-muted">{phaseLabel}</div>
+      <div className="mt-1.5 text-xs" style={{ color: '#a1a1aa' }}>{phaseLabel}</div>
     </div>
   );
 }
@@ -236,8 +230,6 @@ export function TrainerOutput() {
 
   const tickerProgress = useMemo(() => {
     const progress = parseProgress(trainerLogs);
-    // Ensure all running trainers have a progress entry even if their
-    // initial log was pushed out of the 500-line buffer
     const trainers = processStatus?.trainers ?? {};
     for (const [ticker, info] of Object.entries(trainers)) {
       if (info.running && !progress.has(ticker)) {
@@ -251,24 +243,26 @@ export function TrainerOutput() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 bg-dark-bg2 border-b border-dark-border">
-        <h3 className="text-sm font-semibold text-dark-fg">
+      <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid #27272a' }}>
+        <h3 className="text-sm font-semibold" style={{ color: '#ECEDEE' }}>
           Trainer Output{headerLabel}
         </h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowRaw((v) => !v)}
-            className={`px-3 py-1 text-xs rounded ${
-              showRaw
-                ? 'bg-dark-select text-dark-fg'
-                : 'text-dark-muted hover:text-dark-fg'
-            }`}
+            className="px-3 py-1 text-xs rounded-lg transition-all"
+            style={{
+              background: showRaw ? 'rgba(0, 111, 238, 0.15)' : 'transparent',
+              color: showRaw ? '#006FEE' : '#a1a1aa',
+              border: showRaw ? '1px solid rgba(0, 111, 238, 0.25)' : '1px solid transparent',
+            }}
           >
             Raw Output
           </button>
           <button
             onClick={clearTrainerLogs}
-            className="px-3 py-1 text-xs text-dark-muted hover:text-dark-fg"
+            className="px-3 py-1 text-xs rounded-lg transition-all"
+            style={{ color: '#a1a1aa' }}
           >
             Clear
           </button>
@@ -278,9 +272,9 @@ export function TrainerOutput() {
       {showRaw ? (
         <LogViewer logs={trainerLogs} className="flex-1" />
       ) : (
-        <div className="flex-1 overflow-auto bg-dark-panel">
+        <div className="flex-1 overflow-auto">
           {tickerProgress.size === 0 ? (
-            <div className="p-4 text-xs text-dark-muted">No training in progress...</div>
+            <div className="p-5 text-xs" style={{ color: '#a1a1aa' }}>No training in progress...</div>
           ) : (
             Array.from(tickerProgress.values()).map((p) => (
               <ProgressBar key={p.ticker} progress={p} />

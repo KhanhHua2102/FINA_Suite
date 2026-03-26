@@ -7,16 +7,25 @@ import { AnalysisLogStream } from './AnalysisLogStream';
 import { AnalysisProgressBar } from './AnalysisProgressBar';
 import type { AllocationRecommendation, PortfolioAnalysisResult } from '../../store/portfolioAnalysisStore';
 
-const DECISION_COLORS: Record<string, { badge: string; text: string }> = {
-  BUY: { badge: 'bg-green-500/20 text-green-400 border-green-500/30', text: 'text-green-400' },
-  HOLD: { badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: 'text-yellow-400' },
-  SELL: { badge: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'text-red-400' },
+const DECISION_COLORS: Record<string, { badge: React.CSSProperties; text: React.CSSProperties }> = {
+  BUY: {
+    badge: { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)', color: '#17c964' },
+    text: { color: '#17c964' },
+  },
+  HOLD: {
+    badge: { background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.25)', color: '#f5a524' },
+    text: { color: '#f5a524' },
+  },
+  SELL: {
+    badge: { background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f31260' },
+    text: { color: '#f31260' },
+  },
 };
 
-const ACTION_COLORS: Record<string, string> = {
-  INCREASE: 'text-green-400',
-  DECREASE: 'text-red-400',
-  MAINTAIN: 'text-dark-muted',
+const ACTION_COLORS: Record<string, React.CSSProperties> = {
+  INCREASE: { color: '#17c964' },
+  DECREASE: { color: '#f31260' },
+  MAINTAIN: { color: '#a1a1aa' },
 };
 
 function fmt(n: number, d = 2) {
@@ -24,13 +33,13 @@ function fmt(n: number, d = 2) {
 }
 
 function HealthGauge({ score }: { score: number }) {
-  const color = score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#ef4444';
+  const color = score >= 70 ? '#17c964' : score >= 40 ? '#f5a524' : '#f31260';
   const pct = Math.min(score, 100);
   return (
     <div className="flex flex-col items-center">
       <div className="relative w-24 h-24">
         <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="#1e293b" strokeWidth="8" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" strokeWidth="8" />
           <circle
             cx="50" cy="50" r="42" fill="none" stroke={color} strokeWidth="8"
             strokeDasharray={`${pct * 2.64} 264`} strokeLinecap="round"
@@ -40,7 +49,7 @@ function HealthGauge({ score }: { score: number }) {
           <span className="text-2xl font-bold font-mono" style={{ color }}>{score}</span>
         </div>
       </div>
-      <p className="text-xs text-dark-muted mt-2">Portfolio Health</p>
+      <p className="text-xs mt-2" style={{ color: '#a1a1aa' }}>Portfolio Health</p>
     </div>
   );
 }
@@ -53,34 +62,34 @@ function DecisionBreakdown({ results }: { results: PortfolioAnalysisResult[] }) 
     <div className="text-center">
       <div className="flex items-center justify-center gap-4">
         <div>
-          <p className="text-2xl font-bold text-green-400">{buys}</p>
-          <p className="text-xs text-dark-muted">BUY</p>
+          <p className="text-2xl font-bold" style={{ color: '#17c964' }}>{buys}</p>
+          <p className="text-xs" style={{ color: '#a1a1aa' }}>BUY</p>
         </div>
-        <div className="w-px h-8 bg-dark-border" />
+        <div className="w-px h-8" style={{ background: '#27272a' }} />
         <div>
-          <p className="text-2xl font-bold text-yellow-400">{holds}</p>
-          <p className="text-xs text-dark-muted">HOLD</p>
+          <p className="text-2xl font-bold" style={{ color: '#f5a524' }}>{holds}</p>
+          <p className="text-xs" style={{ color: '#a1a1aa' }}>HOLD</p>
         </div>
-        <div className="w-px h-8 bg-dark-border" />
+        <div className="w-px h-8" style={{ background: '#27272a' }} />
         <div>
-          <p className="text-2xl font-bold text-red-400">{sells}</p>
-          <p className="text-xs text-dark-muted">SELL</p>
+          <p className="text-2xl font-bold" style={{ color: '#f31260' }}>{sells}</p>
+          <p className="text-xs" style={{ color: '#a1a1aa' }}>SELL</p>
         </div>
       </div>
-      <p className="text-xs text-dark-muted mt-2">Recommendations</p>
+      <p className="text-xs mt-2" style={{ color: '#a1a1aa' }}>Recommendations</p>
     </div>
   );
 }
 
 function WeightedUpside({ results }: { results: PortfolioAnalysisResult[] }) {
   const weighted = results.reduce((sum, r) => sum + r.upside * (r.currentWeight / 100), 0);
-  const color = weighted >= 0 ? 'text-green-400' : 'text-red-400';
+  const color = weighted >= 0 ? '#17c964' : '#f31260';
   return (
     <div className="text-center">
-      <p className={`text-2xl font-bold font-mono ${color}`}>
+      <p className="text-2xl font-bold font-mono" style={{ color }}>
         {weighted >= 0 ? '+' : ''}{weighted.toFixed(1)}%
       </p>
-      <p className="text-xs text-dark-muted mt-2">Weighted Upside</p>
+      <p className="text-xs mt-2" style={{ color: '#a1a1aa' }}>Weighted Upside</p>
     </div>
   );
 }
@@ -90,25 +99,28 @@ function AllocationBar({ alloc }: { alloc: AllocationRecommendation }) {
   const dc = DECISION_COLORS[alloc.decision] || DECISION_COLORS.HOLD;
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="w-16 text-xs font-bold text-dark-fg truncate">{alloc.ticker}</span>
+      <span className="w-16 text-xs font-bold truncate" style={{ color: '#ECEDEE' }}>{alloc.ticker}</span>
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-3 bg-dark-bg rounded-full overflow-hidden">
-            <div className="h-full bg-dark-muted/40 rounded-full" style={{ width: `${(alloc.currentWeight / maxW) * 100}%` }} />
+          <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: '#27272a' }}>
+            <div className="h-full rounded-full" style={{ width: `${(alloc.currentWeight / maxW) * 100}%`, background: 'rgba(250,250,250,0.18)' }} />
           </div>
-          <span className="text-[10px] text-dark-muted font-mono w-10 text-right">{alloc.currentWeight.toFixed(1)}%</span>
+          <span className="text-[10px] font-mono w-10 text-right" style={{ color: '#a1a1aa' }}>{alloc.currentWeight.toFixed(1)}%</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-3 bg-dark-bg rounded-full overflow-hidden">
+          <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: '#27272a' }}>
             <div
-              className={`h-full rounded-full ${alloc.decision === 'BUY' ? 'bg-green-500/70' : alloc.decision === 'SELL' ? 'bg-red-500/70' : 'bg-yellow-500/70'}`}
-              style={{ width: `${(alloc.targetWeight / maxW) * 100}%` }}
+              className="h-full rounded-full"
+              style={{
+                width: `${(alloc.targetWeight / maxW) * 100}%`,
+                background: alloc.decision === 'BUY' ? 'rgba(34,197,94,0.7)' : alloc.decision === 'SELL' ? 'rgba(239,68,68,0.7)' : 'rgba(234,179,8,0.7)',
+              }}
             />
           </div>
-          <span className={`text-[10px] font-mono font-bold w-10 text-right ${dc.text}`}>{alloc.targetWeight.toFixed(1)}%</span>
+          <span className="text-[10px] font-mono font-bold w-10 text-right" style={dc.text}>{alloc.targetWeight.toFixed(1)}%</span>
         </div>
       </div>
-      <span className={`text-xs font-mono w-12 text-right ${ACTION_COLORS[alloc.action]}`}>
+      <span className="text-xs font-mono w-12 text-right" style={ACTION_COLORS[alloc.action]}>
         {alloc.delta >= 0 ? '+' : ''}{alloc.delta.toFixed(1)}%
       </span>
     </div>
@@ -181,11 +193,12 @@ export function PortfolioAnalysisView() {
     <div className="flex-1 overflow-auto p-4 space-y-5 max-w-6xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
-        <label className="text-xs font-semibold text-dark-muted uppercase">Portfolio</label>
+        <label className="text-xs font-semibold uppercase" style={{ color: '#a1a1aa' }}>Portfolio</label>
         <select
           value={selectedId ?? ''}
           onChange={e => { selectPortfolio(Number(e.target.value)); reset(); }}
-          className="py-1.5 px-3 bg-dark-panel border border-dark-border rounded-lg text-dark-fg text-sm"
+          className="glass-input py-1.5 px-3 rounded-lg text-sm"
+          style={{ color: '#ECEDEE', background: '#18181b', border: '1px solid #27272a' }}
         >
           <option value="">Select portfolio...</option>
           {portfolios.map(p => (
@@ -198,14 +211,14 @@ export function PortfolioAnalysisView() {
             <button
               onClick={handleAnalyze}
               disabled={selectedTickers.size === 0}
-              className="px-4 py-2 text-sm bg-dark-accent text-dark-bg rounded-lg font-semibold hover:bg-dark-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="btn btn-primary px-4 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Analyze ({selectedTickers.size} selected)
             </button>
             {hasResults && (
               <button
                 onClick={reset}
-                className="px-3 py-2 text-sm text-dark-muted border border-dark-border rounded-lg hover:text-dark-fg hover:bg-dark-panel transition-colors"
+                className="btn btn-secondary px-3 py-2 text-sm"
               >
                 Clear
               </button>
@@ -215,7 +228,7 @@ export function PortfolioAnalysisView() {
         {isRunning && (
           <button
             onClick={cancel}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+            className="btn btn-danger px-4 py-2 text-sm font-medium"
           >
             Cancel
           </button>
@@ -224,37 +237,47 @@ export function PortfolioAnalysisView() {
 
       {/* Ticker Selection */}
       {selectedId && activeHoldings.length > 0 && !isRunning && !hasResults && (
-        <div className="bg-dark-panel border border-dark-border rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-dark-border flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Select Holdings to Analyze</h3>
+        <div className="rounded-xl overflow-hidden" style={{ background: '#18181b', border: '1px solid #27272a' }}>
+          <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa' }}>Select Holdings to Analyze</h3>
             <button
               onClick={toggleAll}
-              className="text-xs text-dark-accent hover:text-dark-accent/80 transition-colors"
+              className="text-xs transition-colors hover:opacity-80"
+              style={{ color: '#006FEE' }}
             >
               {selectedTickers.size === activeHoldings.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
-          <div className="divide-y divide-dark-border">
-            {activeHoldings.map(h => (
+          <div>
+            {activeHoldings.map((h, idx) => (
               <label
                 key={h.ticker}
-                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-dark-panel2/50 transition-colors ${
-                  selectedTickers.has(h.ticker) ? 'bg-dark-panel2/30' : ''
-                }`}
+                className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors"
+                style={{
+                  background: selectedTickers.has(h.ticker) ? 'rgba(99,102,241,0.08)' : 'transparent',
+                  borderBottom: idx < activeHoldings.length - 1 ? '1px solid rgba(255, 255, 255, 0.15)' : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectedTickers.has(h.ticker)) e.currentTarget.style.background = '#27272a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = selectedTickers.has(h.ticker) ? 'rgba(99,102,241,0.08)' : 'transparent';
+                }}
               >
                 <input
                   type="checkbox"
                   checked={selectedTickers.has(h.ticker)}
                   onChange={() => toggleTicker(h.ticker)}
-                  className="w-4 h-4 rounded border-dark-border bg-dark-bg text-dark-accent focus:ring-dark-accent cursor-pointer"
+                  className="w-4 h-4 rounded cursor-pointer"
+                  style={{ accentColor: '#006FEE' }}
                 />
-                <span className={`font-bold text-sm ${selectedTickers.has(h.ticker) ? 'text-dark-fg' : 'text-dark-muted'}`}>
+                <span className="font-bold text-sm" style={{ color: selectedTickers.has(h.ticker) ? '#ECEDEE' : '#a1a1aa' }}>
                   {h.ticker}
                 </span>
-                <span className="text-xs text-dark-muted ml-auto font-mono">
+                <span className="text-xs ml-auto font-mono" style={{ color: '#a1a1aa' }}>
                   ${h.market_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span className="text-xs text-dark-muted font-mono w-12 text-right">
+                <span className="text-xs font-mono w-12 text-right" style={{ color: '#a1a1aa' }}>
                   {h.weight_pct.toFixed(1)}%
                 </span>
               </label>
@@ -265,7 +288,7 @@ export function PortfolioAnalysisView() {
 
       {/* Empty state */}
       {!selectedId && (
-        <div className="flex flex-col items-center justify-center py-16 text-dark-muted gap-3">
+        <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ color: '#a1a1aa' }}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="2" y="7" width="20" height="14" rx="2" />
             <path d="M16 7V5a4 4 0 00-8 0v2" />
@@ -275,20 +298,23 @@ export function PortfolioAnalysisView() {
       )}
 
       {selectedId && activeHoldings.length === 0 && !isRunning && (
-        <div className="flex flex-col items-center justify-center py-16 text-dark-muted gap-3">
+        <div className="flex flex-col items-center justify-center py-16 gap-3" style={{ color: '#a1a1aa' }}>
           <p className="text-sm">No active holdings in this portfolio. Import transactions first.</p>
         </div>
       )}
 
       {/* Progress */}
       {isRunning && (
-        <div className="bg-dark-panel border border-dark-border rounded-xl p-5 space-y-4">
+        <div className="rounded-xl p-5 space-y-4" style={{ background: '#18181b', border: '1px solid #27272a' }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-dark-fg">Analyzing Portfolio...</h3>
-            <span className="text-xs text-dark-muted font-mono">{totalDone} / {totalAll}</span>
+            <h3 className="text-sm font-semibold" style={{ color: '#ECEDEE' }}>Analyzing Portfolio...</h3>
+            <span className="text-xs font-mono" style={{ color: '#a1a1aa' }}>{totalDone} / {totalAll}</span>
           </div>
-          <div className="w-full h-2 bg-dark-bg rounded-full overflow-hidden">
-            <div className="h-full bg-dark-accent rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: '#27272a' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${progressPct}%`, background: '#006FEE' }}
+            />
           </div>
           <div className="space-y-1.5">
             {completed.map(t => {
@@ -296,10 +322,13 @@ export function PortfolioAnalysisView() {
               const report = reports[t];
               return (
                 <div key={t} className="flex items-center gap-2 text-sm">
-                  <span className="text-green-400">&#10003;</span>
-                  <span className="text-dark-fg">{t}</span>
+                  <span style={{ color: '#17c964' }}>&#10003;</span>
+                  <span style={{ color: '#ECEDEE' }}>{t}</span>
                   {report && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded border ${DECISION_COLORS[report.decision]?.badge}`}>
+                    <span
+                      className="text-xs px-1.5 py-0.5 rounded-md font-bold"
+                      style={DECISION_COLORS[report.decision]?.badge}
+                    >
                       {report.decision}
                     </span>
                   )}
@@ -308,14 +337,14 @@ export function PortfolioAnalysisView() {
             })}
             {currentTicker && (
               <div className="flex items-center gap-2 text-sm">
-                <div className="animate-spin w-3.5 h-3.5 border-2 border-dark-accent border-t-transparent rounded-full" />
-                <span className="text-dark-accent font-medium">{displayTicker(currentTicker)}</span>
+                <div className="animate-spin w-3.5 h-3.5 rounded-full" style={{ border: '2px solid #006FEE', borderTopColor: 'transparent' }} />
+                <span className="font-medium" style={{ color: '#006FEE' }}>{displayTicker(currentTicker)}</span>
               </div>
             )}
             {queue.map(t => (
               <div key={t} className="flex items-center gap-2 text-sm">
-                <span className="w-3.5 h-3.5 flex items-center justify-center text-dark-muted text-xs">&#8226;</span>
-                <span className="text-dark-muted">{displayTicker(t)}</span>
+                <span className="w-3.5 h-3.5 flex items-center justify-center text-xs" style={{ color: '#a1a1aa' }}>&#8226;</span>
+                <span style={{ color: '#a1a1aa' }}>{displayTicker(t)}</span>
               </div>
             ))}
           </div>
@@ -330,23 +359,23 @@ export function PortfolioAnalysisView() {
             </div>
           )}
 
-          {cancelled && <p className="text-xs text-yellow-400">Cancelling after current ticker...</p>}
+          {cancelled && <p className="text-xs" style={{ color: '#f5a524' }}>Cancelling after current ticker...</p>}
           {errors.length > 0 && (
-            <div className="text-xs text-red-400 space-y-0.5">
+            <div className="text-xs space-y-0.5" style={{ color: '#f31260' }}>
               {errors.map((e, i) => <p key={i}>{e}</p>)}
             </div>
           )}
 
           {/* Show/Hide Logs */}
-          <div className="flex items-center gap-3 pt-2 border-t border-dark-border">
+          <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}>
             <button
               onClick={() => setShowLogs(!showLogs)}
-              className="px-3 py-1.5 text-xs bg-dark-bg border border-dark-border rounded-lg text-dark-muted hover:text-dark-fg hover:bg-dark-panel2 transition-colors"
+              className="btn btn-secondary px-3 py-1.5 text-xs"
             >
               {showLogs ? 'Hide Logs' : 'Show Logs'}
             </button>
             {currentTicker && (
-              <span className="text-xs text-dark-muted">
+              <span className="text-xs" style={{ color: '#a1a1aa' }}>
                 Live output from {displayTicker(currentTicker)}
               </span>
             )}
@@ -362,26 +391,26 @@ export function PortfolioAnalysisView() {
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-dark-panel border border-dark-border rounded-xl p-5 flex items-center justify-center">
+            <div className="rounded-xl p-5 flex items-center justify-center" style={{ background: '#18181b', border: '1px solid #27272a' }}>
               {healthScore !== null && <HealthGauge score={healthScore} />}
             </div>
-            <div className="bg-dark-panel border border-dark-border rounded-xl p-5 flex items-center justify-center">
+            <div className="rounded-xl p-5 flex items-center justify-center" style={{ background: '#18181b', border: '1px solid #27272a' }}>
               <DecisionBreakdown results={results} />
             </div>
-            <div className="bg-dark-panel border border-dark-border rounded-xl p-5 flex items-center justify-center">
+            <div className="rounded-xl p-5 flex items-center justify-center" style={{ background: '#18181b', border: '1px solid #27272a' }}>
               <WeightedUpside results={results} />
             </div>
           </div>
 
           {/* Holdings Analysis Table */}
-          <div className="bg-dark-panel border border-dark-border rounded-xl overflow-hidden">
-            <div className="px-6 py-3 border-b border-dark-border">
-              <h3 className="text-sm font-semibold text-dark-muted uppercase tracking-wider">Holdings Analysis</h3>
+          <div className="rounded-xl overflow-hidden" style={{ background: '#18181b', border: '1px solid #27272a' }}>
+            <div className="px-6 py-3" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
+              <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa' }}>Holdings Analysis</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-dark-border text-xs text-dark-muted uppercase">
+                  <tr className="text-xs uppercase" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', color: '#a1a1aa' }}>
                     <th className="px-4 py-2 text-left">Ticker</th>
                     <th className="px-4 py-2 text-center">Decision</th>
                     <th className="px-4 py-2 text-center">Score</th>
@@ -399,29 +428,41 @@ export function PortfolioAnalysisView() {
                     const alloc = allocations.find(a => a.ticker === r.ticker);
                     const dc = DECISION_COLORS[r.decision] || DECISION_COLORS.HOLD;
                     return (
-                      <tr key={r.ticker} className="border-b border-dark-border last:border-0 hover:bg-dark-panel2/30">
-                        <td className="px-4 py-2.5 font-bold text-dark-fg">{r.ticker}</td>
+                      <tr
+                        key={r.ticker}
+                        className="last:border-0 transition-colors"
+                        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#27272a'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <td className="px-4 py-2.5 font-bold" style={{ color: '#ECEDEE' }}>{r.ticker}</td>
                         <td className="px-4 py-2.5 text-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${dc.badge}`}>
+                          <span
+                            className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold"
+                            style={dc.badge}
+                          >
                             {r.decision}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center justify-center gap-2">
-                            <div className="w-12 h-2 bg-dark-bg rounded-full overflow-hidden">
+                            <div className="w-12 h-2 rounded-full overflow-hidden" style={{ background: '#27272a' }}>
                               <div
-                                className={`h-full rounded-full ${r.score >= 70 ? 'bg-green-500' : r.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                                style={{ width: `${r.score}%` }}
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${r.score}%`,
+                                  background: r.score >= 70 ? '#17c964' : r.score >= 40 ? '#f5a524' : '#f31260',
+                                }}
                               />
                             </div>
-                            <span className="text-xs font-mono text-dark-fg">{r.score}</span>
+                            <span className="text-xs font-mono" style={{ color: '#ECEDEE' }}>{r.score}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-dark-muted">{r.currentWeight.toFixed(1)}%</td>
-                        <td className="px-4 py-2.5 text-right font-mono font-bold text-dark-fg">
+                        <td className="px-4 py-2.5 text-right font-mono" style={{ color: '#a1a1aa' }}>{r.currentWeight.toFixed(1)}%</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-bold" style={{ color: '#ECEDEE' }}>
                           {alloc ? `${alloc.targetWeight.toFixed(1)}%` : '--'}
                         </td>
-                        <td className={`px-4 py-2.5 text-right font-mono text-xs ${alloc ? ACTION_COLORS[alloc.action] : ''}`}>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs" style={alloc ? ACTION_COLORS[alloc.action] : {}}>
                           {alloc ? (
                             <>
                               {alloc.action === 'INCREASE' ? '\u2191' : alloc.action === 'DECREASE' ? '\u2193' : '\u2194'}
@@ -429,12 +470,12 @@ export function PortfolioAnalysisView() {
                             </>
                           ) : '--'}
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-dark-fg">${fmt(r.currentPrice)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-dark-accent">${fmt(r.targetPrice)}</td>
-                        <td className={`px-4 py-2.5 text-right font-mono ${r.upside >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        <td className="px-4 py-2.5 text-right font-mono" style={{ color: '#ECEDEE' }}>${fmt(r.currentPrice)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono" style={{ color: '#17c964' }}>${fmt(r.targetPrice)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono" style={{ color: r.upside >= 0 ? '#17c964' : '#f31260' }}>
                           {r.upside >= 0 ? '+' : ''}{r.upside.toFixed(1)}%
                         </td>
-                        <td className="px-4 py-2.5 text-right text-xs text-dark-muted">{r.reportAge}</td>
+                        <td className="px-4 py-2.5 text-right text-xs" style={{ color: '#a1a1aa' }}>{r.reportAge}</td>
                       </tr>
                     );
                   })}
@@ -444,15 +485,15 @@ export function PortfolioAnalysisView() {
           </div>
 
           {/* Allocation Comparison */}
-          <div className="bg-dark-panel border border-dark-border rounded-xl p-5">
+          <div className="rounded-xl p-5" style={{ background: '#18181b', border: '1px solid #27272a' }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-dark-muted uppercase tracking-wider">Recommended Allocation</h3>
-              <div className="flex items-center gap-4 text-xs text-dark-muted">
+              <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa' }}>Recommended Allocation</h3>
+              <div className="flex items-center gap-4 text-xs" style={{ color: '#a1a1aa' }}>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-2 bg-dark-muted/40 rounded-sm inline-block" /> Current
+                  <span className="w-3 h-2 rounded-sm inline-block" style={{ background: 'rgba(250,250,250,0.18)' }} /> Current
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-2 bg-green-500/70 rounded-sm inline-block" /> Recommended
+                  <span className="w-3 h-2 rounded-sm inline-block" style={{ background: 'rgba(34,197,94,0.7)' }} /> Recommended
                 </span>
               </div>
             </div>

@@ -21,43 +21,42 @@ export function NeuralTile({ ticker, longSignal, shortSignal, onClick }: NeuralT
   return (
     <div
       onClick={onClick}
-      className="w-24 p-2 bg-dark-panel rounded border border-dark-border hover:border-dark-accent2 cursor-pointer transition-colors"
+      className="w-24 p-2.5 rounded-xl cursor-pointer transition-all duration-200"
+      style={{ background: '#18181b', border: '1px solid #27272a' }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = '#27272a')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = '#18181b')}
     >
-      <div className="text-xs font-medium text-dark-fg text-center mb-2">{ticker}</div>
+      <div className="text-xs font-medium text-center mb-2" style={{ color: '#ECEDEE' }}>{ticker}</div>
 
       <div className="flex justify-center gap-2 mb-2">
         <div className="flex flex-col-reverse gap-0.5">
           {longBars.map((active, i) => (
             <div
               key={i}
-              className={`w-4 h-2 rounded-sm transition-colors ${
-                active ? 'bg-blue-500' : 'bg-dark-bg2'
-              }`}
+              className="w-4 h-2 rounded-sm transition-colors"
+              style={{
+                background: active ? '#006FEE' : '#27272a',
+              }}
             />
           ))}
-          <div className="relative">
-            <div
-              className="absolute w-full h-px bg-dark-muted"
-              style={{ bottom: '8px' }}
-            />
-          </div>
         </div>
 
         <div className="flex flex-col-reverse gap-0.5">
           {shortBars.map((active, i) => (
             <div
               key={i}
-              className={`w-4 h-2 rounded-sm transition-colors ${
-                active ? 'bg-orange-500' : 'bg-dark-bg2'
-              }`}
+              className="w-4 h-2 rounded-sm transition-colors"
+              style={{
+                background: active ? '#f97316' : '#27272a',
+              }}
             />
           ))}
         </div>
       </div>
 
-      <div className="flex justify-center gap-2 text-xs">
-        <span className="text-blue-500">L:{longSignal}</span>
-        <span className="text-orange-500">S:{shortSignal}</span>
+      <div className="flex justify-center gap-2 text-xs font-mono">
+        <span style={{ color: '#006FEE' }}>L:{longSignal}</span>
+        <span style={{ color: '#f97316' }}>S:{shortSignal}</span>
       </div>
     </div>
   );

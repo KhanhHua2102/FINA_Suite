@@ -113,6 +113,32 @@ class ProcessManager:
             proc_info.append_log(line)
             self._broadcast_log(source, line, ticker)
 
+        # When a trainer finishes, auto-start pt_thinker if all tickers are trained
+        if source == "trainer" and ticker:
+            self._on_trainer_finished(ticker)
+
+    def _on_trainer_finished(self, ticker: str):
+        """Called when a trainer process exits. Auto-starts pt_thinker if all tickers are trained."""
+        # Lazy import to avoid circular dependency
+        from app.services.file_watcher import file_watcher
+
+        self._broadcast_status()
+        self._broadcast_log("trainer", f"Training finished for {ticker}", ticker)
+
+        # Check if ALL configured tickers are now trained
+        all_trained = all(
+            file_watcher.get_training_status(t) == "TRAINED"
+            for t in settings.tickers
+        )
+
+        if all_trained and not self.neural.running:
+            # No remaining trainers running either
+            any_training = any(info.running for info in self.trainers.values())
+            if not any_training:
+                self._broadcast_log("runner", "All tickers trained — auto-starting neural runner")
+                file_watcher.write_selected_tickers(settings.tickers)
+                self.start_neural()
+
     def _reset_runner_ready(self):
         """Reset runner_ready state in database."""
         runtime_db.set_status("runner_ready", {

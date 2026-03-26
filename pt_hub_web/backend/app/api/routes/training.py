@@ -87,7 +87,10 @@ async def get_neural_signals():
     for ticker in settings.tickers:
         signal_data = file_watcher.read_neural_signals(ticker)
         if signal_data:
-            signals[ticker] = signal_data
+            signals[ticker] = {
+                "long_signal": signal_data.get("long_dca_signal", 0),
+                "short_signal": signal_data.get("short_dca_signal", 0),
+            }
         else:
             signals[ticker] = {"long_signal": 0, "short_signal": 0}
 
@@ -102,7 +105,10 @@ async def get_ticker_neural_signals(ticker: str):
 
     signal_data = file_watcher.read_neural_signals(ticker)
     if signal_data:
-        return signal_data
+        return {
+            "long_signal": signal_data.get("long_dca_signal", 0),
+            "short_signal": signal_data.get("short_dca_signal", 0),
+        }
     return {"long_signal": 0, "short_signal": 0}
 
 

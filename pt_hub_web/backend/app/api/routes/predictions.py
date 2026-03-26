@@ -19,32 +19,38 @@ async def get_predictions(ticker: str):
     safe = _safe_name(ticker)
     signals_row = runtime_db.get_signals(safe)
 
-    signals = {}
-    for tf in settings.timeframes:
-        if signals_row:
-            high_bounds = signals_row.get("high_bound_prices", [])
-            low_bounds = signals_row.get("low_bound_prices", [])
-            signals[tf] = {
-                "long": signals_row.get("long_dca_signal", 0),
-                "short": signals_row.get("short_dca_signal", 0),
-                "high_bound": high_bounds[-1] if high_bounds else 0.0,
-                "low_bound": low_bounds[-1] if low_bounds else 0.0,
-            }
-        else:
-            signals[tf] = {
-                "long": 0,
-                "short": 0,
-                "high_bound": 0.0,
-                "low_bound": 0.0,
-            }
-
-    # Get current price from the latest signal data or bound prices
+    # Get current price for per-timeframe signal derivation
     current_price = 0.0
     try:
         from legacy.stock_data_fetcher import market
         current_price = market.get_current_price(ticker)
     except Exception:
         pass
+
+    signals = {}
+    high_bounds = signals_row.get("high_bound_prices", []) if signals_row else []
+    low_bounds = signals_row.get("low_bound_prices", []) if signals_row else []
+
+    for i, tf in enumerate(settings.timeframes):
+        high_bound = high_bounds[i] if i < len(high_bounds) else 0.0
+        low_bound = low_bounds[i] if i < len(low_bounds) else 0.0
+
+        # Derive per-timeframe signal from bound prices vs current price
+        # (mirrors pt_thinker logic: price < low_bound → long, price > high_bound → short)
+        tf_long = 0
+        tf_short = 0
+        if current_price > 0 and high_bound > 0 and low_bound > 0:
+            if current_price < low_bound:
+                tf_long = 1
+            elif current_price > high_bound:
+                tf_short = 1
+
+        signals[tf] = {
+            "long": tf_long,
+            "short": tf_short,
+            "high_bound": high_bound,
+            "low_bound": low_bound,
+        }
 
     return {
         "signals": signals,

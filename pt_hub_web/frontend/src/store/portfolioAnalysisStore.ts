@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { analysisApi } from '../services/api';
+import { useAnalysisStore } from './analysisStore';
 import type { AnalysisReport, PortfolioHoldingDetail } from '../services/types';
 
 // Broker exports use ":AU" but analysis engine uses ".AX"
@@ -54,7 +55,7 @@ interface PortfolioAnalysisState {
   healthScore: number | null;
 
   // Actions
-  startAnalysis: (holdings: PortfolioHoldingDetail[], maxAgeHours?: number) => Promise<void>;
+  startAnalysis: (holdings: PortfolioHoldingDetail[]) => Promise<void>;
   onTickerComplete: (ticker: string, report: AnalysisReport) => void;
   cancel: () => void;
   reset: () => void;
@@ -160,7 +161,7 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
   allocations: [],
   healthScore: null,
 
-  startAnalysis: async (holdings, maxAgeHours = 24) => {
+  startAnalysis: async (holdings) => {
     const activeHoldings = holdings.filter(h => h.quantity > 0);
     if (activeHoldings.length === 0) return;
 
@@ -187,13 +188,25 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
       healthScore: null,
     });
 
-    // Check which tickers have fresh reports (use analysis ticker for API)
+    // Check which tickers have fresh reports — only reuse results from today
     const freshReports: Record<string, AnalysisReport> = {};
     const needAnalysis: string[] = [];
-    const cutoff = Date.now() - maxAgeHours * 60 * 60 * 1000;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const cutoff = today.getTime();
+    const cachedReports = useAnalysisStore.getState().latestReports;
 
     for (const aTicker of analysisTickers) {
       const pTicker = tickerMap[aTicker];
+
+      // Check analysisStore in-memory cache first (from single ticker runs)
+      const cached = cachedReports[aTicker];
+      if (cached && new Date(cached.created_at).getTime() > cutoff) {
+        freshReports[pTicker] = cached;
+        continue;
+      }
+
+      // Fall back to API (backend DB)
       try {
         const resp = await analysisApi.getLatest(aTicker);
         const report = resp.report;
@@ -204,6 +217,15 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
         }
       } catch {
         needAnalysis.push(aTicker);
+      }
+    }
+
+    // Sync fresh reports to analysisStore for single ticker reuse
+    const { setLatestReport } = useAnalysisStore.getState();
+    for (const aTicker of analysisTickers) {
+      const pTicker = tickerMap[aTicker];
+      if (freshReports[pTicker]) {
+        setLatestReport(aTicker, freshReports[pTicker]);
       }
     }
 
@@ -270,6 +292,8 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
     const newReports = { ...state.reports };
     if (report) {
       newReports[pTicker] = report;
+      // Sync to analysisStore so single ticker view can reuse this result
+      useAnalysisStore.getState().setLatestReport(analysisTicker, report);
     }
 
     const newCompleted = state.completed.includes(pTicker)
@@ -285,8 +309,9 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
     });
 
     if (state.cancelled || remaining.length === 0) {
-      import('./portfolioStore').then(({ usePortfolioStore }) => {
-        const summary = usePortfolioStore.getState().summary;
+      import('./portfolioStore').then(({ usePortfolioStore, getDashboardFromCache }) => {
+        const selectedId = usePortfolioStore.getState().selectedId;
+        const summary = selectedId !== null ? getDashboardFromCache(selectedId)?.summary ?? null : null;
         if (summary) {
           const results = buildResults(summary.holdings, get().reports);
           const allocations = computeAllocations(results);

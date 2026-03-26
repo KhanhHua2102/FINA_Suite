@@ -2,16 +2,17 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { createChart, IChartApi, ISeriesApi, LineData, Time, LineStyle } from 'lightweight-charts';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
+import { CandleLoader } from '../common/CandleLoader';
 
 const BENCHMARK_OPTIONS: { ticker: string; label: string }[] = [
-  { ticker: 'URTH', label: 'URTH — MSCI World' },
+  { ticker: 'URTH', label: 'URTH -- MSCI World' },
   { ticker: '^GSPC', label: 'S&P 500' },
-  { ticker: 'BGBL.AX', label: 'BGBL.AX — BetaShares Global' },
-  { ticker: 'VT', label: 'VT — Vanguard Total World' },
-  { ticker: 'ACWI', label: 'ACWI — MSCI All Country' },
+  { ticker: 'BGBL.AX', label: 'BGBL.AX -- BetaShares Global' },
+  { ticker: 'VT', label: 'VT -- Vanguard Total World' },
+  { ticker: 'ACWI', label: 'ACWI -- MSCI All Country' },
   { ticker: '^AXJO', label: 'ASX 200' },
-  { ticker: 'VGS.AX', label: 'VGS.AX — Vanguard Intl Shares' },
-  { ticker: 'IOZ.AX', label: 'IOZ.AX — iShares ASX 200' },
+  { ticker: 'VGS.AX', label: 'VGS.AX -- Vanguard Intl Shares' },
+  { ticker: 'IOZ.AX', label: 'IOZ.AX -- iShares ASX 200' },
 ];
 
 type Timeframe = '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL';
@@ -52,13 +53,15 @@ function rebaseReturns(data: { date: string; cumulative_return: number }[]): { d
   if (data.length === 0) return data;
   const base = data[0].cumulative_return;
   if (base === 0) return data;
-  // Convert: new_return = ((1 + cum/100) / (1 + base/100) - 1) * 100
   const baseFactor = 1 + base / 100;
   return data.map(d => ({
     date: d.date,
     cumulative_return: Math.round(((1 + d.cumulative_return / 100) / baseFactor - 1) * 10000) / 100,
   }));
 }
+
+const pnlStyle = (v: number): React.CSSProperties =>
+  v > 0 ? { color: '#17c964' } : v < 0 ? { color: '#f31260' } : { color: '#a1a1aa' };
 
 export function PerformanceChart() {
   const { selectedId, portfolios, changeBenchmark } = usePortfolioStore();
@@ -162,29 +165,29 @@ export function PerformanceChart() {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { color: '#0D1117' },
-        textColor: '#8B949E',
+        background: { color: 'transparent' },
+        textColor: '#a1a1aa',
         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: '#161B22' },
-        horzLines: { color: '#161B22' },
+        vertLines: { color: 'rgba(255,255,255,0.06)' },
+        horzLines: { color: 'rgba(255,255,255,0.06)' },
       },
       timeScale: {
         timeVisible: false,
-        borderColor: '#21262D',
+        borderColor: '#27272a',
         fixLeftEdge: true,
         fixRightEdge: true,
       },
       rightPriceScale: {
-        borderColor: '#21262D',
+        borderColor: '#27272a',
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       crosshair: {
         mode: 0,
-        vertLine: { color: '#484F58', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#30363D' },
-        horzLine: { color: '#484F58', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#30363D' },
+        vertLine: { color: '#a1a1aa', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#27272a' },
+        horzLine: { color: '#a1a1aa', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#27272a' },
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true },
       handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
@@ -226,10 +229,10 @@ export function PerformanceChart() {
 
     if (chartData.primary.length === 0) return;
 
-    const primaryColor = view === 'drawdown' ? '#EF4444' : '#6366F1';
+    const primaryColor = view === 'drawdown' ? '#f31260' : '#006FEE';
     const lastVal = chartData.primary[chartData.primary.length - 1]?.value ?? 0;
     const isPositive = view === 'performance' ? lastVal >= 0 : view === 'value';
-    const lineColor = view === 'performance' ? (isPositive ? '#22C55E' : '#EF4444') : primaryColor;
+    const lineColor = view === 'performance' ? (isPositive ? '#17c964' : '#f31260') : primaryColor;
 
     const primarySeries = chart.addLineSeries({
       color: lineColor,
@@ -253,7 +256,7 @@ export function PerformanceChart() {
     if (view === 'performance' || view === 'drawdown') {
       primarySeries.createPriceLine({
         price: 0,
-        color: '#30363D',
+        color: '#27272a',
         lineWidth: 1,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: false,
@@ -261,7 +264,7 @@ export function PerformanceChart() {
     }
 
     if (chartData.secondary.length > 0) {
-      const secondaryColor = view === 'value' ? '#F59E0B' : '#F59E0B';
+      const secondaryColor = '#F59E0B';
       const benchSeries = chart.addLineSeries({
         color: secondaryColor,
         lineWidth: 2,
@@ -298,12 +301,10 @@ export function PerformanceChart() {
       const pVal = portfolioSeriesRef.current ? param.seriesData.get(portfolioSeriesRef.current) : undefined;
       let bVal = benchmarkSeriesRef.current ? param.seriesData.get(benchmarkSeriesRef.current) : undefined;
 
-      // If benchmark has no data at this exact date, use its last known value
       let benchmarkValue: number | undefined;
       if (bVal && 'value' in bVal) {
         benchmarkValue = (bVal as { value: number }).value;
       } else if (chartData.secondary.length > 0) {
-        // Find the closest benchmark point at or before the hovered date
         const hoveredDate = String(param.time);
         for (let i = chartData.secondary.length - 1; i >= 0; i--) {
           if (String(chartData.secondary[i].time) <= hoveredDate) {
@@ -330,27 +331,25 @@ export function PerformanceChart() {
       ? `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
 
-  const pnlColor = (v: number) =>
-    v > 0 ? 'text-green-400' : v < 0 ? 'text-red-400' : 'text-dark-muted';
-
   const hasData = chartData.primary.length > 1;
 
   return (
-    <div className="bg-dark-panel border border-dark-border rounded-xl overflow-hidden">
+    <div className="rounded-xl overflow-hidden" style={{ background: '#18181b', border: '1px solid #27272a' }}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-dark-border">
+      <div className="px-6 py-4" style={{ borderBottom: '1px solid #27272a' }}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           {/* View Switcher */}
-          <div className="flex items-center gap-1 bg-dark-bg rounded-lg p-0.5">
+          <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: '#27272a' }}>
             {VIEWS.map(v => (
               <button
                 key={v.key}
                 onClick={() => setView(v.key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                style={
                   view === v.key
-                    ? 'bg-dark-panel2 text-dark-fg shadow-sm'
-                    : 'text-dark-muted hover:text-dark-fg'
-                }`}
+                    ? { background: '#006FEE', color: '#ffffff' }
+                    : { color: '#a1a1aa' }
+                }
               >
                 {v.label}
               </button>
@@ -358,16 +357,17 @@ export function PerformanceChart() {
           </div>
 
           {/* Timeframe Buttons */}
-          <div className="flex items-center gap-1 bg-dark-bg rounded-lg p-0.5">
+          <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: '#27272a' }}>
             {TIMEFRAMES.map(tf => (
               <button
                 key={tf.key}
                 onClick={() => setTimeframe(tf.key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                className="px-3 py-1.5 text-xs font-medium rounded-full transition-colors"
+                style={
                   timeframe === tf.key
-                    ? 'bg-dark-accent text-white shadow-sm'
-                    : 'text-dark-muted hover:text-dark-fg'
-                }`}
+                    ? { background: '#006FEE', color: '#ffffff' }
+                    : { color: '#a1a1aa' }
+                }
               >
                 {tf.label}
               </button>
@@ -380,9 +380,9 @@ export function PerformanceChart() {
           <div className="flex items-center gap-6 mt-3 text-sm">
             {hoverData ? (
               <>
-                <span className="text-dark-muted font-mono text-xs">{hoverData.date}</span>
+                <span className="font-mono text-xs" style={{ color: '#a1a1aa' }}>{hoverData.date}</span>
                 {hoverData.portfolio !== undefined && (
-                  <span className={`font-mono font-bold ${pnlColor(hoverData.portfolio)}`}>
+                  <span className="font-mono font-bold" style={pnlStyle(hoverData.portfolio)}>
                     {chartData.primaryLabel}: {formatVal(hoverData.portfolio)}
                   </span>
                 )}
@@ -395,23 +395,23 @@ export function PerformanceChart() {
             ) : (
               <>
                 <div>
-                  <span className="text-dark-muted text-xs">{chartData.primaryLabel}: </span>
-                  <span className={`font-mono font-bold ${view === 'drawdown' ? 'text-red-400' : pnlColor(stats.last)}`}>
+                  <span className="text-xs" style={{ color: '#a1a1aa' }}>{chartData.primaryLabel}: </span>
+                  <span className="font-mono font-bold" style={view === 'drawdown' ? { color: '#f31260' } : pnlStyle(stats.last)}>
                     {formatVal(stats.last)}
                   </span>
                 </div>
                 {stats.benchLast !== null && (
                   <div>
-                    <span className="text-dark-muted text-xs">{chartData.secondaryLabel}: </span>
-                    <span className={`font-mono ${view === 'value' ? 'text-amber-400' : pnlColor(stats.benchLast)}`}>
+                    <span className="text-xs" style={{ color: '#a1a1aa' }}>{chartData.secondaryLabel}: </span>
+                    <span className="font-mono" style={view === 'value' ? { color: '#F59E0B' } : pnlStyle(stats.benchLast)}>
                       {formatVal(stats.benchLast)}
                     </span>
                   </div>
                 )}
                 {view === 'performance' && stats.benchLast !== null && (
                   <div>
-                    <span className="text-dark-muted text-xs">Alpha: </span>
-                    <span className={`font-mono font-bold ${pnlColor(stats.last - stats.benchLast)}`}>
+                    <span className="text-xs" style={{ color: '#a1a1aa' }}>Alpha: </span>
+                    <span className="font-mono font-bold" style={pnlStyle(stats.last - stats.benchLast)}>
                       {(stats.last - stats.benchLast) >= 0 ? '+' : ''}{(stats.last - stats.benchLast).toFixed(2)}%
                     </span>
                   </div>
@@ -419,12 +419,12 @@ export function PerformanceChart() {
                 {(view === 'performance' || view === 'drawdown') && (
                   <>
                     <div>
-                      <span className="text-dark-muted text-xs">High: </span>
-                      <span className="font-mono text-dark-fg">{formatVal(stats.max)}</span>
+                      <span className="text-xs" style={{ color: '#a1a1aa' }}>High: </span>
+                      <span className="font-mono" style={{ color: '#ECEDEE' }}>{formatVal(stats.max)}</span>
                     </div>
                     <div>
-                      <span className="text-dark-muted text-xs">Low: </span>
-                      <span className="font-mono text-dark-fg">{formatVal(stats.min)}</span>
+                      <span className="text-xs" style={{ color: '#a1a1aa' }}>Low: </span>
+                      <span className="font-mono" style={{ color: '#ECEDEE' }}>{formatVal(stats.min)}</span>
                     </div>
                   </>
                 )}
@@ -437,19 +437,19 @@ export function PerformanceChart() {
       {/* Chart */}
       <div className="relative" style={{ height: 360 }}>
         {!hasData && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 bg-dark-panel">
-            <p className="text-dark-muted text-sm">Not enough data for this timeframe</p>
+          <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: '#18181b' }}>
+            <CandleLoader label="Not enough data for this timeframe" />
           </div>
         )}
         <div ref={containerRef} className="w-full" style={{ height: 360 }} />
       </div>
 
       {/* Legend */}
-      <div className="px-6 py-3 border-t border-dark-border flex items-center gap-6 text-xs text-dark-muted">
+      <div className="px-6 py-3 flex items-center gap-6 text-xs" style={{ borderTop: '1px solid #27272a', color: '#a1a1aa' }}>
         <span className="flex items-center gap-1.5">
           <span
             className="inline-block w-4 h-0.5 rounded"
-            style={{ backgroundColor: view === 'drawdown' ? '#EF4444' : view === 'performance' ? (stats && stats.last >= 0 ? '#22C55E' : '#EF4444') : '#6366F1' }}
+            style={{ backgroundColor: view === 'drawdown' ? '#f31260' : view === 'performance' ? (stats && stats.last >= 0 ? '#17c964' : '#f31260') : '#006FEE' }}
           />
           {chartData.primaryLabel}
         </span>
@@ -457,7 +457,10 @@ export function PerformanceChart() {
           <div className="relative" ref={pickerRef}>
             <button
               onClick={() => setShowBenchmarkPicker(!showBenchmarkPicker)}
-              className="flex items-center gap-1.5 px-2 py-1 -my-1 rounded-md hover:bg-dark-panel2 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2 py-1 -my-1 rounded-lg transition-colors cursor-pointer"
+              style={{ background: 'transparent' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#27272a'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
               title="Click to change benchmark"
             >
               <span
@@ -476,18 +479,19 @@ export function PerformanceChart() {
               )}
             </button>
             {showBenchmarkPicker && (
-              <div className="absolute bottom-full left-0 mb-1 bg-dark-panel border border-dark-border rounded-lg shadow-xl z-50 py-1 min-w-[220px]">
+              <div className="absolute bottom-full left-0 mb-1 rounded-xl shadow-lg z-50 py-1 min-w-[220px]" style={{ background: '#18181b', border: '1px solid #27272a' }}>
                 {BENCHMARK_OPTIONS.map(opt => (
                   <button
                     key={opt.ticker}
                     onClick={() => handleBenchmarkChange(opt.ticker)}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-dark-panel2 transition-colors ${
-                      opt.ticker === currentBenchmark ? 'text-dark-accent font-semibold' : 'text-dark-fg'
-                    }`}
+                    className="w-full text-left px-3 py-2 text-xs transition-colors"
+                    style={{ color: opt.ticker === currentBenchmark ? '#006FEE' : '#ECEDEE', fontWeight: opt.ticker === currentBenchmark ? 600 : 400 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#27272a'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
                     {opt.label}
                     {opt.ticker === currentBenchmark && (
-                      <span className="ml-2 text-dark-accent">&#10003;</span>
+                      <span className="ml-2" style={{ color: '#006FEE' }}>&#10003;</span>
                     )}
                   </button>
                 ))}

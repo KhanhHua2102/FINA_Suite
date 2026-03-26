@@ -1,12 +1,12 @@
 /** Shimmer skeleton placeholders for the portfolio dashboard cards. */
 
 function Pulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`animate-pulse bg-dark-border/40 rounded ${className ?? ''}`} style={style} />;
+  return <div className={`animate-pulse rounded ${className ?? ''}`} style={{ background: '#27272a', ...style }} />;
 }
 
 function CardSkeleton({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-dark-panel border border-dark-border rounded-xl ${className ?? ''}`}>
+    <div className={`rounded-xl ${className ?? ''}`} style={{ background: '#18181b', border: '1px solid #27272a' }}>
       {children}
     </div>
   );
@@ -36,7 +36,6 @@ export function DashboardSkeleton() {
     <div className="space-y-6">
       {/* Hero + Returns Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Hero Summary */}
         <CardSkeleton className="p-6 space-y-4">
           <Pulse className="h-3 w-28" />
           <Pulse className="h-8 w-48" />
@@ -44,7 +43,7 @@ export function DashboardSkeleton() {
             <Pulse className="h-5 w-16" />
             <Pulse className="h-5 w-24" />
           </div>
-          <div className="flex gap-6 pt-4 border-t border-dark-border">
+          <div className="flex gap-6 pt-4" style={{ borderTop: '1px solid #27272a' }}>
             {[1, 2, 3].map(i => (
               <div key={i} className="text-center space-y-1">
                 <Pulse className="h-5 w-20 mx-auto" />
@@ -54,14 +53,13 @@ export function DashboardSkeleton() {
           </div>
         </CardSkeleton>
 
-        {/* Returns Grid */}
         <CardSkeleton className="overflow-hidden">
-          <div className="px-6 py-3 border-b border-dark-border">
+          <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
             <Pulse className="h-3 w-32" />
           </div>
           <div className="grid grid-cols-3 md:grid-cols-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className={`p-4 space-y-2 ${i < 6 ? 'border-r border-dark-border' : ''}`}>
+              <div key={i} className="p-4 space-y-2" style={i < 6 ? { borderRight: '1px solid #27272a' } : undefined}>
                 <Pulse className="h-3 w-6" />
                 <Pulse className="h-4 w-14" />
                 <Pulse className="h-3 w-10" />
@@ -87,7 +85,7 @@ export function DashboardSkeleton() {
 
       {/* Performance Chart placeholder */}
       <CardSkeleton className="overflow-hidden">
-        <div className="px-6 py-3 border-b border-dark-border">
+        <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
           <Pulse className="h-3 w-36" />
         </div>
         <div className="p-4">
@@ -97,17 +95,15 @@ export function DashboardSkeleton() {
 
       {/* Holdings Table placeholder */}
       <CardSkeleton className="overflow-hidden">
-        <div className="px-6 py-3 border-b border-dark-border">
+        <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
           <Pulse className="h-3 w-28" />
         </div>
         <div className="p-4 space-y-3">
-          {/* Header row */}
           <div className="flex gap-4">
             {[60, 40, 50, 50, 60, 40, 50, 50, 50, 60].map((w, i) => (
               <Pulse key={i} className="h-3" style={{ width: w }} />
             ))}
           </div>
-          {/* Data rows */}
           {[1, 2, 3, 4].map(row => (
             <div key={row} className="flex gap-4">
               {[60, 40, 50, 50, 60, 40, 50, 50, 50, 60].map((w, i) => (
@@ -118,10 +114,10 @@ export function DashboardSkeleton() {
         </div>
       </CardSkeleton>
 
-      {/* Sector + Closed — 2 col */}
+      {/* Sector + Closed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CardSkeleton className="overflow-hidden">
-          <div className="px-6 py-3 border-b border-dark-border">
+          <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
             <Pulse className="h-3 w-32" />
           </div>
           <div className="p-4 space-y-4">
@@ -138,7 +134,7 @@ export function DashboardSkeleton() {
         </CardSkeleton>
 
         <CardSkeleton className="overflow-hidden">
-          <div className="px-6 py-3 border-b border-dark-border">
+          <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
             <Pulse className="h-3 w-28" />
           </div>
           <div className="p-4 space-y-3">
@@ -155,7 +151,7 @@ export function DashboardSkeleton() {
 
       {/* Monthly Returns placeholder */}
       <CardSkeleton className="overflow-hidden">
-        <div className="px-6 py-3 border-b border-dark-border">
+        <div className="px-6 py-3" style={{ borderBottom: '1px solid #27272a' }}>
           <Pulse className="h-3 w-28" />
         </div>
         <div className="p-4 flex items-end gap-1" style={{ height: 160 }}>

@@ -6,7 +6,7 @@ export function ChartsTab() {
   const { chartTicker } = useSettingsStore();
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#18181b] rounded-2xl overflow-hidden">
       <ChartTabBar />
       <div className="flex-1 overflow-hidden">
         {chartTicker && <CandlestickChart ticker={chartTicker} />}

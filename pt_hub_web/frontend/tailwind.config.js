@@ -7,21 +7,62 @@ export default {
   theme: {
     extend: {
       colors: {
+        background: '#000000',
+        foreground: '#ECEDEE',
+        surface: {
+          DEFAULT: '#18181b',
+          secondary: '#27272a',
+          tertiary: '#3f3f46',
+        },
+        muted: '#a1a1aa',
+        accent: {
+          DEFAULT: '#006FEE',
+          foreground: '#ffffff',
+          100: '#001731',
+          500: '#006FEE',
+        },
+        secondary: {
+          DEFAULT: '#7828c8',
+          foreground: '#ffffff',
+        },
+        success: {
+          DEFAULT: '#17c964',
+          foreground: '#000000',
+          600: '#12a150',
+        },
+        warning: {
+          DEFAULT: '#f5a524',
+          foreground: '#000000',
+        },
+        danger: {
+          DEFAULT: '#f31260',
+          foreground: '#ffffff',
+        },
+        border: 'rgba(255, 255, 255, 0.15)',
+        separator: 'rgba(255, 255, 255, 0.15)',
+        field: '#18181b',
+        // Legacy aliases (dark-* tokens used in some components)
         dark: {
-          bg: '#070B10',
-          bg2: '#0B1220',
-          panel: '#0E1626',
-          panel2: '#121C2F',
-          border: '#243044',
-          fg: '#C7D1DB',
-          muted: '#8B949E',
-          accent: '#00FF66',
-          accent2: '#00E5FF',
-          select: '#17324A',
+          bg: '#000000',
+          bg2: '#18181b',
+          panel: '#18181b',
+          panel2: '#27272a',
+          border: 'rgba(255, 255, 255, 0.15)',
+          fg: '#ECEDEE',
+          muted: '#a1a1aa',
+          accent: '#006FEE',
+          accent2: '#338ef7',
+          select: 'rgba(0, 111, 238, 0.15)',
         },
       },
       fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         mono: ['JetBrains Mono', 'Consolas', 'Monaco', 'monospace'],
+      },
+      borderRadius: {
+        'glass': '0.75rem',
+        'glass-sm': '0.5rem',
+        'glass-pill': '9999px',
       },
     },
   },

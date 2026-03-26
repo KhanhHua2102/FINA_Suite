@@ -47,19 +47,33 @@ export function PortfolioTab() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="rounded-xl flex flex-col h-full overflow-hidden" style={{ background: '#18181b' }}>
       {/* Portfolio Selector Bar */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-dark-border bg-dark-bg2 shrink-0">
-        <label className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Portfolio</label>
+      <div
+        className="flex items-center gap-3 px-6 py-3 shrink-0"
+        style={{ background: '#18181b', borderBottom: '1px solid #27272a' }}
+      >
+        <label
+          className="text-xs font-semibold uppercase tracking-wider"
+          style={{ color: '#a1a1aa' }}
+        >
+          Portfolio
+        </label>
         {loading ? (
-          <div className="animate-spin w-4 h-4 border-2 border-dark-accent border-t-transparent rounded-full" />
+          <div
+            className="animate-spin w-4 h-4 rounded-full"
+            style={{ border: '2px solid #006FEE', borderTopColor: 'transparent' }}
+          />
         ) : portfolios.length === 0 ? (
-          <span className="text-dark-muted text-sm">No portfolios yet</span>
+          <span className="text-sm" style={{ color: '#a1a1aa' }}>No portfolios yet</span>
         ) : (
           <select
             value={selectedId ?? ''}
             onChange={e => selectPortfolio(Number(e.target.value))}
-            className="py-1.5 px-3 bg-dark-panel border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+            className="py-1.5 px-3 text-sm rounded-xl"
+            style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
           >
             {portfolios.map(p => (
               <option key={p.id} value={p.id}>{p.name} ({p.currency})</option>
@@ -69,7 +83,10 @@ export function PortfolioTab() {
 
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="px-3 py-1.5 text-xs bg-dark-accent text-white rounded-lg font-medium hover:bg-dark-accent/90 transition-colors"
+          className="px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors text-white"
+          style={{ background: '#006FEE' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
         >
           + New
         </button>
@@ -77,7 +94,10 @@ export function PortfolioTab() {
         {selectedId && (
           <button
             onClick={handleDelete}
-            className="px-3 py-1.5 text-xs text-red-400 border border-red-500/30 rounded-lg font-medium hover:bg-red-500/10 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors text-white"
+            style={{ background: '#f31260' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#f31260'; }}
           >
             Delete
           </button>
@@ -92,37 +112,59 @@ export function PortfolioTab() {
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
               placeholder="Portfolio name"
-              className="px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+              className="px-3 py-1.5 text-sm rounded-xl"
+              style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               autoFocus
             />
             <button
               onClick={handleCreate}
-              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg font-medium hover:bg-green-600/90 transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold rounded-xl transition-colors text-white"
+              style={{ background: '#006FEE' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
             >
               Create
             </button>
             <button
               onClick={() => { setShowCreate(false); setNewName(''); setCreateError(''); }}
-              className="px-2 py-1.5 text-xs text-dark-muted hover:text-dark-fg transition-colors"
+              className="px-2 py-1.5 text-xs transition-colors"
+              style={{ color: '#a1a1aa' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#ECEDEE')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#a1a1aa')}
             >
               Cancel
             </button>
-            {createError && <span className="text-red-400 text-xs">{createError}</span>}
+            {createError && <span className="text-xs" style={{ color: '#f31260' }}>{createError}</span>}
           </div>
         )}
       </div>
 
       {/* Sub-Tab Navigation */}
-      <div className="flex border-b border-dark-border bg-dark-bg shrink-0">
+      <div className="flex gap-1 px-4 py-2 shrink-0" style={{ background: '#18181b' }}>
         {SUB_TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setSubView(tab.key)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+            className="px-5 py-2 text-sm font-medium transition-colors rounded-full"
+            style={
               subView === tab.key
-                ? 'text-dark-accent border-b-2 border-dark-accent bg-dark-panel/50'
-                : 'text-dark-muted hover:text-dark-fg hover:bg-dark-panel/30'
-            }`}
+                ? { background: '#006FEE', color: '#ffffff' }
+                : { color: '#a1a1aa' }
+            }
+            onMouseEnter={e => {
+              if (subView !== tab.key) {
+                e.currentTarget.style.color = '#ECEDEE';
+                e.currentTarget.style.background = '#27272a';
+              }
+            }}
+            onMouseLeave={e => {
+              if (subView !== tab.key) {
+                e.currentTarget.style.color = '#a1a1aa';
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
           >
             {tab.label}
           </button>
@@ -133,7 +175,10 @@ export function PortfolioTab() {
       <div className="flex-1 overflow-y-auto">
       <div className="p-6 max-w-7xl mx-auto w-full">
         {!selectedId && subView !== 'optimize' ? (
-          <div className="flex flex-col items-center justify-center py-16 text-dark-muted gap-4">
+          <div
+            className="flex flex-col items-center justify-center py-16 gap-4"
+            style={{ color: '#a1a1aa' }}
+          >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
               <rect x="2" y="7" width="20" height="14" rx="2" />
               <path d="M16 7V5a4 4 0 00-8 0v2" />

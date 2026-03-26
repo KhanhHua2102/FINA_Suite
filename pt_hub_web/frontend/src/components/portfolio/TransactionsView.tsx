@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { usePortfolioStore } from '../../store/portfolioStore';
 
-const TYPE_COLORS: Record<string, string> = {
-  BUY: 'bg-green-500/20 text-green-400 border-green-500/30',
-  SELL: 'bg-red-500/20 text-red-400 border-red-500/30',
-  DIVIDEND: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  SPLIT: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+const TYPE_COLORS: Record<string, { background: string; border: string; color: string }> = {
+  BUY: { background: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.25)', color: '#17c964' },
+  SELL: { background: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.25)', color: '#f31260' },
+  DIVIDEND: { background: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.25)', color: '#006FEE' },
+  SPLIT: { background: 'rgba(168,85,247,0.15)', border: 'rgba(168,85,247,0.25)', color: '#a78bfa' },
 };
 
 function formatCurrency(v: number) {
@@ -95,7 +95,7 @@ export function TransactionsView() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-dark-fg">
+        <h2 className="text-lg font-bold" style={{ color: '#ECEDEE' }}>
           {selectMode ? `${selected.size} selected` : `Transactions (${txnTotal})`}
         </h2>
         <div className="flex items-center gap-2">
@@ -104,13 +104,17 @@ export function TransactionsView() {
               <button
                 onClick={handleBatchDelete}
                 disabled={selected.size === 0 || deleting}
-                className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium hover:bg-red-500/30 disabled:opacity-30 transition-colors"
+                className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors text-white disabled:opacity-50"
+                style={{ background: '#f31260' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f31260'; }}
               >
                 {deleting ? 'Deleting...' : `Delete (${selected.size})`}
               </button>
               <button
                 onClick={exitSelectMode}
-                className="px-4 py-2 bg-dark-panel border border-dark-border text-dark-fg rounded-lg text-sm font-medium hover:bg-dark-panel2 transition-colors"
+                className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors"
+                style={{ background: '#27272a', color: '#ECEDEE' }}
               >
                 Cancel
               </button>
@@ -120,13 +124,17 @@ export function TransactionsView() {
               <button
                 onClick={() => setSelectMode(true)}
                 disabled={transactions.length === 0}
-                className="px-4 py-2 bg-dark-panel border border-dark-border text-dark-fg rounded-lg text-sm font-medium hover:bg-dark-panel2 disabled:opacity-30 transition-colors"
+                className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+                style={{ background: '#27272a', color: '#ECEDEE' }}
               >
                 Select
               </button>
               <button
                 onClick={() => setShowAdd(!showAdd)}
-                className="px-4 py-2 bg-dark-accent text-white rounded-lg text-sm font-medium hover:bg-dark-accent/90 transition-colors"
+                className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors text-white"
+                style={{ background: '#006FEE' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
               >
                 {showAdd ? 'Cancel' : '+ Add Transaction'}
               </button>
@@ -137,24 +145,30 @@ export function TransactionsView() {
 
       {/* Add Transaction Form */}
       {showAdd && (
-        <div className="bg-dark-panel border border-dark-border rounded-xl p-4">
+        <div className="rounded-xl p-4" style={{ background: '#18181b', border: '1px solid #27272a' }}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Ticker *</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Ticker *</label>
               <input
                 type="text"
                 value={form.ticker}
                 onChange={e => setForm(f => ({ ...f, ticker: e.target.value }))}
                 placeholder="AAPL"
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Type *</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Type *</label>
               <select
                 value={form.type}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               >
                 <option value="BUY">BUY</option>
                 <option value="SELL">SELL</option>
@@ -163,62 +177,80 @@ export function TransactionsView() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Date *</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Date *</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Quantity *</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Quantity *</label>
               <input
                 type="number"
                 step="any"
                 value={form.quantity}
                 onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
                 placeholder="100"
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm font-mono focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm font-mono"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Price ($)</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Price ($)</label>
               <input
                 type="number"
                 step="any"
                 value={form.price}
                 onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                 placeholder="150.00"
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm font-mono focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm font-mono"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
             <div>
-              <label className="text-xs text-dark-muted uppercase block mb-1">Fees ($)</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Fees ($)</label>
               <input
                 type="number"
                 step="any"
                 value={form.fees}
                 onChange={e => setForm(f => ({ ...f, fees: e.target.value }))}
                 placeholder="9.95"
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm font-mono focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm font-mono"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs text-dark-muted uppercase block mb-1">Notes</label>
+              <label className="text-xs uppercase block mb-1" style={{ color: '#a1a1aa' }}>Notes</label>
               <input
                 type="text"
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="Optional notes"
-                className="w-full px-3 py-2 bg-dark-bg border border-dark-border rounded-lg text-dark-fg text-sm focus:ring-dark-accent focus:border-dark-accent"
+                className="w-full px-3 py-2 rounded-xl text-sm"
+                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
               />
             </div>
           </div>
-          {addError && <p className="text-red-400 text-sm mt-2">{addError}</p>}
+          {addError && <p className="text-sm mt-2" style={{ color: '#f31260' }}>{addError}</p>}
           <button
             onClick={handleAdd}
-            className="mt-3 px-5 py-2 bg-dark-accent text-white rounded-lg text-sm font-medium hover:bg-dark-accent/90 transition-colors"
+            className="mt-3 px-4 py-2 text-sm font-semibold rounded-xl transition-colors text-white"
+            style={{ background: '#006FEE' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
           >
             Add Transaction
           </button>
@@ -226,26 +258,30 @@ export function TransactionsView() {
       )}
 
       {/* Transaction Table */}
-      <div className="bg-dark-panel border border-dark-border rounded-xl overflow-hidden">
+      <div className="rounded-xl overflow-hidden" style={{ background: '#18181b', border: '1px solid #27272a' }}>
         {txnLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin w-5 h-5 border-2 border-dark-accent border-t-transparent rounded-full" />
-            <span className="ml-2 text-dark-muted text-sm">Loading...</span>
+            <div
+              className="animate-spin w-5 h-5 rounded-full"
+              style={{ border: '2px solid #006FEE', borderTopColor: 'transparent' }}
+            />
+            <span className="ml-2 text-sm" style={{ color: '#a1a1aa' }}>Loading...</span>
           </div>
         ) : transactions.length === 0 ? (
-          <p className="text-dark-muted text-center py-12 text-sm">No transactions yet.</p>
+          <p className="text-center py-12 text-sm" style={{ color: '#a1a1aa' }}>No transactions yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-dark-border text-xs text-dark-muted uppercase">
+                <tr className="text-xs uppercase" style={{ borderBottom: '1px solid #27272a', color: '#a1a1aa' }}>
                   {selectMode && (
                     <th className="px-4 py-2 w-8">
                       <input
                         type="checkbox"
                         checked={transactions.length > 0 && selected.size === transactions.length}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-dark-border bg-dark-bg text-dark-accent focus:ring-dark-accent cursor-pointer"
+                        className="w-4 h-4 rounded cursor-pointer"
+                        style={{ accentColor: '#006FEE' }}
                       />
                     </th>
                   )}
@@ -260,51 +296,76 @@ export function TransactionsView() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map(txn => (
-                  <tr
-                    key={txn.id}
-                    className={`border-b border-dark-border last:border-0 hover:bg-dark-panel2/50 ${selectMode && selected.has(txn.id) ? 'bg-dark-accent/10' : ''}`}
-                    onClick={selectMode ? () => toggleSelect(txn.id) : undefined}
-                    style={selectMode ? { cursor: 'pointer' } : undefined}
-                  >
-                    {selectMode && (
-                      <td className="px-4 py-2 w-8" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selected.has(txn.id)}
-                          onChange={() => toggleSelect(txn.id)}
-                          className="w-4 h-4 rounded border-dark-border bg-dark-bg text-dark-accent focus:ring-dark-accent cursor-pointer"
-                        />
+                {transactions.map(txn => {
+                  const isSelected = selectMode && selected.has(txn.id);
+                  return (
+                    <tr
+                      key={txn.id}
+                      className="last:border-0 transition-colors"
+                      style={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+                        background: isSelected ? 'rgba(99,102,241,0.08)' : undefined,
+                        cursor: selectMode ? 'pointer' : undefined,
+                      }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#27272a'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = isSelected ? 'rgba(99,102,241,0.08)' : ''; }}
+                      onClick={selectMode ? () => toggleSelect(txn.id) : undefined}
+                    >
+                      {selectMode && (
+                        <td className="px-4 py-2 w-8" onClick={e => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(txn.id)}
+                            onChange={() => toggleSelect(txn.id)}
+                            className="w-4 h-4 rounded cursor-pointer"
+                            style={{ accentColor: '#006FEE' }}
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-2 font-mono" style={{ color: '#a1a1aa' }}>{txn.date}</td>
+                      <td className="px-4 py-2 font-bold" style={{ color: '#ECEDEE' }}>{txn.ticker}</td>
+                      <td className="px-4 py-2 text-center">
+                        {(() => {
+                          const tc = TYPE_COLORS[txn.type];
+                          return (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded-full text-xs font-bold"
+                              style={tc ? {
+                                background: tc.background,
+                                border: `1px solid ${tc.border}`,
+                                color: tc.color,
+                              } : undefined}
+                            >
+                              {txn.type}
+                            </span>
+                          );
+                        })()}
                       </td>
-                    )}
-                    <td className="px-4 py-2 text-dark-muted font-mono">{txn.date}</td>
-                    <td className="px-4 py-2 font-bold text-dark-fg">{txn.ticker}</td>
-                    <td className="px-4 py-2 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold border ${TYPE_COLORS[txn.type] || ''}`}>
-                        {txn.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 text-right font-mono text-dark-fg">{txn.quantity}</td>
-                    <td className="px-4 py-2 text-right font-mono text-dark-fg">${formatCurrency(txn.price)}</td>
-                    <td className="px-4 py-2 text-right font-mono text-dark-muted">${formatCurrency(txn.fees)}</td>
-                    <td className="px-4 py-2 text-right font-mono text-dark-fg font-semibold">
-                      ${formatCurrency(txn.quantity * txn.price)}
-                    </td>
-                    {!selectMode && (
-                      <td className="px-4 py-2">
-                        <button
-                          onClick={() => handleDelete(txn.id)}
-                          className="text-dark-muted hover:text-red-400 transition-colors"
-                          title="Delete"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                          </svg>
-                        </button>
+                      <td className="px-4 py-2 text-right font-mono" style={{ color: '#ECEDEE' }}>{txn.quantity}</td>
+                      <td className="px-4 py-2 text-right font-mono" style={{ color: '#ECEDEE' }}>${formatCurrency(txn.price)}</td>
+                      <td className="px-4 py-2 text-right font-mono" style={{ color: '#a1a1aa' }}>${formatCurrency(txn.fees)}</td>
+                      <td className="px-4 py-2 text-right font-mono font-semibold" style={{ color: '#ECEDEE' }}>
+                        ${formatCurrency(txn.quantity * txn.price)}
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      {!selectMode && (
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={() => handleDelete(txn.id)}
+                            className="transition-colors"
+                            style={{ color: '#a1a1aa' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#f31260'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#a1a1aa'; }}
+                            title="Delete"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -317,17 +378,19 @@ export function TransactionsView() {
           <button
             onClick={() => selectedId && fetchTransactions(selectedId, txnPage - 1)}
             disabled={txnPage === 0}
-            className="px-3 py-1 text-sm bg-dark-panel border border-dark-border rounded-lg text-dark-fg disabled:opacity-30 hover:bg-dark-panel2 transition-colors"
+            className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            style={{ background: '#27272a', color: '#ECEDEE' }}
           >
             Prev
           </button>
-          <span className="text-sm text-dark-muted">
+          <span className="text-sm" style={{ color: '#a1a1aa' }}>
             Page {txnPage + 1} of {totalPages}
           </span>
           <button
             onClick={() => selectedId && fetchTransactions(selectedId, txnPage + 1)}
             disabled={txnPage >= totalPages - 1}
-            className="px-3 py-1 text-sm bg-dark-panel border border-dark-border rounded-lg text-dark-fg disabled:opacity-30 hover:bg-dark-panel2 transition-colors"
+            className="px-3 py-1.5 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            style={{ background: '#27272a', color: '#ECEDEE' }}
           >
             Next
           </button>

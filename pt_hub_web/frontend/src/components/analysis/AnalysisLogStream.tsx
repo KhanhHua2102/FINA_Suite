@@ -20,17 +20,31 @@ export function AnalysisLogStream({ logs }: { logs: string[] }) {
   if (formattedLines.length === 0) return null;
 
   return (
-    <div className="bg-dark-panel rounded-lg border border-dark-border">
-      <div className="px-4 py-2 border-b border-dark-border">
-        <h3 className="text-sm font-medium text-dark-muted">Analysis Logs</h3>
+    <div
+      className="rounded-xl"
+      style={{ background: '#18181b', border: '1px solid #27272a' }}
+    >
+      <div
+        className="px-4 py-2"
+        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}
+      >
+        <h3
+          className="text-sm font-medium"
+          style={{ color: '#a1a1aa' }}
+        >
+          Analysis Logs
+        </h3>
       </div>
       <div
         ref={containerRef}
-        className="p-4 max-h-[300px] overflow-auto font-mono text-xs text-dark-fg leading-relaxed"
+        className="p-4 max-h-[300px] overflow-auto font-mono text-xs leading-relaxed"
+        style={{ color: '#a1a1aa' }}
       >
         {formattedLines.map((line, i) => (
           <div key={i} className="py-0.5">
-            <span className="text-dark-muted mr-2">•</span>
+            <span className="mr-2" style={{ color: '#27272a' }}>
+              •
+            </span>
             {line}
           </div>
         ))}

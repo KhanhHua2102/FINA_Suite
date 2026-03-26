@@ -12,7 +12,8 @@ export function ChartTabBar() {
       <select
         value={chartTimeframe}
         onChange={(e) => setChartTimeframe(e.target.value)}
-        className="px-3 py-1.5 text-xs bg-dark-panel border border-dark-border rounded text-dark-fg focus:outline-none focus:border-dark-accent"
+        className="glass-input text-xs py-1.5 px-3"
+        style={{ borderRadius: '8px' }}
       >
         {timeframes.map((tf) => (
           <option key={tf} value={tf}>

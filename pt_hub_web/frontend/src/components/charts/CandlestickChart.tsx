@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts';
 import { useSettingsStore } from '../../store/settingsStore';
 import { chartsApi } from '../../services/api';
+import { CandleLoader } from '../common/CandleLoader';
 import type { Candle, ChartOverlays } from '../../services/types';
 
 interface CandlestickChartProps {
@@ -22,35 +23,35 @@ export function CandlestickChart({ ticker }: CandlestickChartProps) {
 
     chartRef.current = createChart(containerRef.current, {
       layout: {
-        background: { color: '#070B10' },
-        textColor: '#C7D1DB',
+        background: { color: 'transparent' },
+        textColor: 'rgba(255, 255, 255, 0.55)',
       },
       grid: {
-        vertLines: { color: '#243044' },
-        horzLines: { color: '#243044' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.06)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.06)' },
       },
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: '#243044',
+        borderColor: '#27272a',
       },
       rightPriceScale: {
-        borderColor: '#243044',
+        borderColor: '#27272a',
       },
       crosshair: {
         mode: 1,
-        vertLine: { color: '#8B949E', width: 1, style: 2 },
-        horzLine: { color: '#8B949E', width: 1, style: 2 },
+        vertLine: { color: 'rgba(255, 255, 255, 0.2)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(255, 255, 255, 0.2)', width: 1, style: 2 },
       },
     });
 
     candleSeriesRef.current = chartRef.current.addCandlestickSeries({
-      upColor: '#00FF66',
-      downColor: '#FF4444',
-      borderUpColor: '#00FF66',
-      borderDownColor: '#FF4444',
-      wickUpColor: '#00FF66',
-      wickDownColor: '#FF4444',
+      upColor: '#17c964',
+      downColor: '#f31260',
+      borderUpColor: '#17c964',
+      borderDownColor: '#f31260',
+      wickUpColor: '#17c964',
+      wickDownColor: '#f31260',
     });
 
     const handleResize = () => {
@@ -113,7 +114,7 @@ export function CandlestickChart({ ticker }: CandlestickChartProps) {
     overlays.neural_levels.long.forEach((price) => {
       if (price > 0) {
         candleSeriesRef.current?.createPriceLine({
-          price, color: '#3B82F6', lineWidth: 1, lineStyle: 0, axisLabelVisible: false,
+          price, color: '#006FEE', lineWidth: 1, lineStyle: 0, axisLabelVisible: false,
         });
       }
     });
@@ -121,32 +122,32 @@ export function CandlestickChart({ ticker }: CandlestickChartProps) {
     overlays.neural_levels.short.forEach((price) => {
       if (price > 0) {
         candleSeriesRef.current?.createPriceLine({
-          price, color: '#F97316', lineWidth: 1, lineStyle: 0, axisLabelVisible: false,
+          price, color: '#f97316', lineWidth: 1, lineStyle: 0, axisLabelVisible: false,
         });
       }
     });
 
     if (overlays.trail_line > 0) {
       candleSeriesRef.current?.createPriceLine({
-        price: overlays.trail_line, color: '#00FF66', lineWidth: 2, lineStyle: 0, title: 'SELL', axisLabelVisible: true,
+        price: overlays.trail_line, color: '#17c964', lineWidth: 2, lineStyle: 0, title: 'SELL', axisLabelVisible: true,
       });
     }
 
     if (overlays.dca_line > 0) {
       candleSeriesRef.current?.createPriceLine({
-        price: overlays.dca_line, color: '#EF4444', lineWidth: 2, lineStyle: 0, title: 'DCA', axisLabelVisible: true,
+        price: overlays.dca_line, color: '#f31260', lineWidth: 2, lineStyle: 0, title: 'DCA', axisLabelVisible: true,
       });
     }
 
     if (overlays.ask_price > 0) {
       candleSeriesRef.current?.createPriceLine({
-        price: overlays.ask_price, color: '#A855F7', lineWidth: 1, lineStyle: 2, title: 'ASK', axisLabelVisible: true,
+        price: overlays.ask_price, color: '#a78bfa', lineWidth: 1, lineStyle: 2, title: 'ASK', axisLabelVisible: true,
       });
     }
 
     if (overlays.bid_price > 0) {
       candleSeriesRef.current?.createPriceLine({
-        price: overlays.bid_price, color: '#14B8A6', lineWidth: 1, lineStyle: 2, title: 'BID', axisLabelVisible: true,
+        price: overlays.bid_price, color: '#2dd4bf', lineWidth: 1, lineStyle: 2, title: 'BID', axisLabelVisible: true,
       });
     }
   };
@@ -154,13 +155,13 @@ export function CandlestickChart({ ticker }: CandlestickChartProps) {
   return (
     <div className="relative h-full">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-dark-bg/80 z-10">
-          <span className="text-dark-muted">Loading chart...</span>
+        <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'rgba(24, 24, 27, 0.8)' }}>
+          <CandleLoader label="Loading chart..." />
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-dark-bg/80 z-10">
-          <span className="text-red-500">{error}</span>
+        <div className="absolute inset-0 flex items-center justify-center z-10" style={{ background: 'rgba(24, 24, 27, 0.8)' }}>
+          <span style={{ color: '#f31260' }}>{error}</span>
         </div>
       )}
       <div ref={containerRef} className="w-full h-full" />

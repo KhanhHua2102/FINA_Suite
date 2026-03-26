@@ -97,27 +97,32 @@ export function AnalysisTab() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* View mode toggle */}
-      <div className="flex items-center border-b border-dark-border bg-dark-bg2 shrink-0">
-        <button
-          onClick={() => setViewMode('single')}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-            viewMode === 'single'
-              ? 'text-dark-accent border-b-2 border-dark-accent bg-dark-panel/50'
-              : 'text-dark-muted hover:text-dark-fg hover:bg-dark-panel/30'
-          }`}
-        >
-          Single Ticker
-        </button>
-        <button
-          onClick={() => setViewMode('portfolio')}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-            viewMode === 'portfolio'
-              ? 'text-dark-accent border-b-2 border-dark-accent bg-dark-panel/50'
-              : 'text-dark-muted hover:text-dark-fg hover:bg-dark-panel/30'
-          }`}
-        >
-          My Portfolio
-        </button>
+      <div
+        className="flex items-center gap-2 p-2 shrink-0"
+        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}
+      >
+        <div className="flex rounded-xl p-1" style={{ background: '#27272a' }}>
+          <button
+            onClick={() => setViewMode('single')}
+            className="px-5 py-2 text-sm font-medium rounded-lg transition-all"
+            style={{
+              background: viewMode === 'single' ? '#006FEE' : 'transparent',
+              color: viewMode === 'single' ? '#ffffff' : '#a1a1aa',
+            }}
+          >
+            Single Ticker
+          </button>
+          <button
+            onClick={() => setViewMode('portfolio')}
+            className="px-5 py-2 text-sm font-medium rounded-lg transition-all"
+            style={{
+              background: viewMode === 'portfolio' ? '#006FEE' : 'transparent',
+              color: viewMode === 'portfolio' ? '#ffffff' : '#a1a1aa',
+            }}
+          >
+            My Portfolio
+          </button>
+        </div>
       </div>
 
       {viewMode === 'portfolio' ? (
@@ -137,11 +142,16 @@ export function AnalysisTab() {
             <button
               onClick={handleRunAnalysis}
               disabled={isRunning}
-              className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+              className={`btn text-sm font-medium transition-all ${
                 isRunning
-                  ? 'bg-dark-panel text-dark-muted cursor-not-allowed'
-                  : 'bg-dark-accent text-white hover:bg-dark-accent/80'
+                  ? 'btn-secondary cursor-not-allowed'
+                  : 'btn-primary'
               }`}
+              style={
+                isRunning
+                  ? { color: '#a1a1aa' }
+                  : undefined
+              }
             >
               {isRunning && runningTicker === selectedTicker
                 ? 'Analyzing...'
@@ -153,7 +163,8 @@ export function AnalysisTab() {
             {analysisLogs.length > 0 && (
               <button
                 onClick={() => setShowLogs(!showLogs)}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-dark-panel text-dark-muted hover:text-dark-fg hover:bg-dark-panel2 transition-colors"
+                className="btn btn-secondary text-sm font-medium transition-all"
+                style={{ color: '#a1a1aa' }}
               >
                 {showLogs ? 'Hide Logs' : 'Show Logs'}
               </button>
@@ -162,13 +173,14 @@ export function AnalysisTab() {
             {report && (
               <button
                 onClick={handleLoadHistory}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-dark-panel text-dark-muted hover:text-dark-fg hover:bg-dark-panel2 transition-colors"
+                className="btn btn-secondary text-sm font-medium transition-all"
+                style={{ color: '#a1a1aa' }}
               >
                 {showHistory ? 'Hide History' : 'View History'}
               </button>
             )}
 
-            {error && <span className="text-red-400 text-sm">{error}</span>}
+            {error && <span className="text-sm" style={{ color: '#f31260' }}>{error}</span>}
           </div>
 
           {/* Progress bar during analysis */}
@@ -188,7 +200,10 @@ export function AnalysisTab() {
           {/* Latest Report */}
           {!showHistory && report && (
             <>
-              <h2 className="text-lg font-medium text-dark-fg">
+              <h2
+                className="text-lg font-medium"
+                style={{ color: '#ECEDEE' }}
+              >
                 {selectedTicker} — Latest Analysis
               </h2>
               <AnalysisReportCard report={report} />
@@ -197,7 +212,10 @@ export function AnalysisTab() {
 
           {/* No report state */}
           {!showHistory && !report && !isRunning && (
-            <div className="flex items-center justify-center h-48 text-dark-muted">
+            <div
+              className="flex items-center justify-center h-48"
+              style={{ color: '#a1a1aa' }}
+            >
               No analysis yet for {selectedTicker}. Click "Run Analysis" to start.
             </div>
           )}
@@ -205,13 +223,20 @@ export function AnalysisTab() {
           {/* History */}
           {showHistory && (
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-dark-fg">
+              <h2
+                className="text-lg font-medium"
+                style={{ color: '#ECEDEE' }}
+              >
                 {selectedTicker} — History ({reportHistoryTotal} reports)
               </h2>
               {reportHistory.map((r) => (
                 <HistoryRow key={r.id} report={r} />
               ))}
-              {loading && <div className="text-dark-muted text-sm">Loading...</div>}
+              {loading && (
+                <div className="text-sm" style={{ color: '#a1a1aa' }}>
+                  Loading...
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -224,24 +249,34 @@ export function AnalysisTab() {
 
 function HistoryRow({ report }: { report: AnalysisReport }) {
   const [expanded, setExpanded] = useState(false);
-  const style = {
-    BUY: 'text-green-400',
-    HOLD: 'text-yellow-400',
-    SELL: 'text-red-400',
-  }[report.decision] ?? 'text-dark-muted';
+  const decisionColor = {
+    BUY: '#17c964',
+    HOLD: '#f5a524',
+    SELL: '#f31260',
+  }[report.decision] ?? '#a1a1aa';
 
   return (
-    <div className="bg-dark-panel rounded-lg border border-dark-border">
+    <div
+      className="rounded-xl"
+      style={{ background: '#18181b', border: '1px solid #27272a' }}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-dark-panel2 transition-colors rounded-lg"
+        className="w-full flex items-center justify-between p-4 text-left transition-colors rounded-xl"
+        style={{ background: 'transparent' }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = '#27272a'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
       >
         <div className="flex items-center gap-4">
-          <span className={`font-bold ${style}`}>{report.decision}</span>
-          <span className="text-dark-fg text-sm">Score: {report.score}</span>
-          <span className="text-dark-muted text-xs">{report.conclusion.slice(0, 80)}...</span>
+          <span className="font-bold" style={{ color: decisionColor }}>{report.decision}</span>
+          <span className="text-sm font-mono" style={{ color: '#ECEDEE' }}>
+            Score: {report.score}
+          </span>
+          <span className="text-xs" style={{ color: '#a1a1aa' }}>
+            {report.conclusion.slice(0, 80)}...
+          </span>
         </div>
-        <span className="text-dark-muted text-xs">
+        <span className="text-xs font-mono" style={{ color: '#a1a1aa' }}>
           {new Date(report.created_at).toLocaleString()}
         </span>
       </button>

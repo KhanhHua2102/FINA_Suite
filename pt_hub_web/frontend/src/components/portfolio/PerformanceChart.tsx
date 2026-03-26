@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { createChart, IChartApi, ISeriesApi, LineData, Time, LineStyle } from 'lightweight-charts';
 import { usePortfolioStore } from '../../store/portfolioStore';
+import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
 
 const BENCHMARK_OPTIONS: { ticker: string; label: string }[] = [
   { ticker: 'URTH', label: 'URTH — MSCI World' },
@@ -60,7 +61,9 @@ function rebaseReturns(data: { date: string; cumulative_return: number }[]): { d
 }
 
 export function PerformanceChart() {
-  const { performance, valueHistory, drawdown, selectedId, portfolios, changeBenchmark } = usePortfolioStore();
+  const { selectedId, portfolios, changeBenchmark } = usePortfolioStore();
+  const { data: dashData } = usePortfolioDashboard(selectedId);
+  const { performance, valueHistory, drawdown } = dashData;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const portfolioSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
@@ -261,7 +264,7 @@ export function PerformanceChart() {
       const secondaryColor = view === 'value' ? '#F59E0B' : '#F59E0B';
       const benchSeries = chart.addLineSeries({
         color: secondaryColor,
-        lineWidth: 1,
+        lineWidth: 2,
         lineStyle: view === 'value' ? LineStyle.Dashed : LineStyle.Solid,
         priceFormat: {
           type: 'custom',
@@ -272,7 +275,7 @@ export function PerformanceChart() {
         },
         crosshairMarkerRadius: 3,
         crosshairMarkerBackgroundColor: secondaryColor,
-        lastValueVisible: false,
+        lastValueVisible: true,
         priceLineVisible: false,
       });
       benchSeries.setData(chartData.secondary);

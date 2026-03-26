@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { useAnalysisStore } from '../../store/analysisStore';
 import { usePortfolioAnalysisStore } from '../../store/portfolioAnalysisStore';
+import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
 import { AnalysisLogStream } from './AnalysisLogStream';
 import { AnalysisProgressBar } from './AnalysisProgressBar';
 import type { AllocationRecommendation, PortfolioAnalysisResult } from '../../store/portfolioAnalysisStore';
@@ -115,7 +116,8 @@ function AllocationBar({ alloc }: { alloc: AllocationRecommendation }) {
 }
 
 export function PortfolioAnalysisView() {
-  const { portfolios, selectedId, summary, fetchPortfolios, selectPortfolio } = usePortfolioStore();
+  const { portfolios, selectedId, fetchPortfolios, selectPortfolio } = usePortfolioStore();
+  const { data: { summary } } = usePortfolioDashboard(selectedId);
   const { analysisLogs } = useAnalysisStore();
   const {
     totalTickers, queue, completed, currentTicker, isRunning, cancelled, errors,

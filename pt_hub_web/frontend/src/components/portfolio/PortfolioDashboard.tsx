@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { usePortfolioStore } from '../../store/portfolioStore';
+import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
 import { PerformanceChart } from './PerformanceChart';
+import { DashboardSkeleton } from './DashboardSkeleton';
 import type { ValueHistoryPoint, MonthlyReturn } from '../../services/types';
 
 const PNL_COLORS = (v: number) =>
@@ -18,25 +20,41 @@ function formatCompact(v: number) {
 }
 
 // ── Returns by Timeframe Grid ──────────────────────────────────
-function computeReturnForDays(data: ValueHistoryPoint[], days: number | null): { dollar: number; pct: number } | null {
-  if (data.length < 2) return null;
-  const last = data[data.length - 1];
+// Uses TWR cumulative returns for % (accounts for cash flows) and value history for $ change
+function computeTwrReturnForDays(
+  twrData: { date: string; cumulative_return: number }[],
+  valueData: ValueHistoryPoint[],
+  days: number | null,
+): { dollar: number; pct: number } | null {
+  if (twrData.length < 2 || valueData.length < 2) return null;
+
+  const lastTwr = twrData[twrData.length - 1];
+  const lastVal = valueData[valueData.length - 1];
+
   if (days === null) {
-    // "All" — use first point
-    const first = data[0];
-    if (first.value <= 0) return null;
-    return { dollar: last.value - first.value, pct: (last.value / first.value - 1) * 100 };
+    // "All" — TWR from inception is the last cumulative_return
+    const firstVal = valueData[0];
+    return { dollar: lastVal.value - firstVal.value, pct: lastTwr.cumulative_return };
   }
+
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
-  // Find closest point at or after cutoff
-  const start = data.find(d => d.date >= cutoffStr) || data[0];
-  if (start.value <= 0) return null;
-  return { dollar: last.value - start.value, pct: (last.value / start.value - 1) * 100 };
+
+  // Find the TWR point closest to the cutoff to compute sub-period return
+  const startTwr = twrData.find(d => d.date >= cutoffStr) || twrData[0];
+  const startVal = valueData.find(d => d.date >= cutoffStr) || valueData[0];
+
+  // TWR sub-period: ((1 + last%) / (1 + start%) - 1) * 100
+  const lastFactor = 1 + lastTwr.cumulative_return / 100;
+  const startFactor = 1 + startTwr.cumulative_return / 100;
+  if (startFactor <= 0) return null;
+  const pct = (lastFactor / startFactor - 1) * 100;
+
+  return { dollar: lastVal.value - startVal.value, pct };
 }
 
-function ReturnsGrid({ data }: { data: ValueHistoryPoint[] }) {
+function ReturnsGrid({ twrData, valueData }: { twrData: { date: string; cumulative_return: number }[]; valueData: ValueHistoryPoint[] }) {
   const periods = [
     { label: '1W', days: 7 },
     { label: '1M', days: 30 },
@@ -48,7 +66,7 @@ function ReturnsGrid({ data }: { data: ValueHistoryPoint[] }) {
 
   const results = periods.map(p => ({
     ...p,
-    result: computeReturnForDays(data, p.days),
+    result: computeTwrReturnForDays(twrData, valueData, p.days),
   }));
 
   return (
@@ -154,31 +172,49 @@ function MonthlyReturnsChart({ data }: { data: MonthlyReturn[] }) {
 
 // ── Main Dashboard ─────────────────────────────────────────────
 export function PortfolioDashboard() {
-  const { selectedId, summary, dashboardLoading, valueHistory, performance, allocation, monthlyReturns, drawdown, stockBreakdown, closedBreakdown, dividends, rebuildSnapshots } = usePortfolioStore();
+  const { selectedId, rebuildSnapshots } = usePortfolioStore();
+  const { data, isLoading, invalidate } = usePortfolioDashboard(selectedId);
+  const { summary, valueHistory, performance, allocation, monthlyReturns, drawdown, stockBreakdown, closedBreakdown, dividends } = data;
   const [rebuilding, setRebuilding] = useState(false);
+  const [heroView, setHeroView] = useState<'current' | 'historical'>('current');
 
   const handleRebuild = async () => {
     if (!selectedId || rebuilding) return;
     setRebuilding(true);
     try {
       await rebuildSnapshots(selectedId);
+      invalidate();
     } finally {
       setRebuilding(false);
     }
   };
 
-  const capitalGain = useMemo(() => {
-    if (!summary) return 0;
-    return summary.unrealised_pnl + summary.realised_pnl;
-  }, [summary]);
+  const currentStats = useMemo(() => {
+    const totalValue = stockBreakdown.reduce((s, h) => s + h.market_value, 0);
+    const invested = stockBreakdown.reduce((s, h) => s + h.cost_basis, 0);
+    const capitalGain = stockBreakdown.reduce((s, h) => s + h.unrealised_pnl, 0);
+    const income = stockBreakdown.reduce((s, h) => s + h.dividends, 0);
+    const totalGain = capitalGain + income;
+    const totalGainPct = invested > 0 ? (totalGain / invested * 100) : 0;
+    return { totalValue, invested, capitalGain, income, totalGain, totalGainPct };
+  }, [stockBreakdown]);
 
-  if (dashboardLoading && !summary) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin w-6 h-6 border-2 border-dark-accent border-t-transparent rounded-full" />
-        <span className="ml-3 text-dark-muted">Loading dashboard...</span>
-      </div>
-    );
+  const historicalStats = useMemo(() => {
+    const all = [...stockBreakdown, ...closedBreakdown];
+    const currentMarketValue = stockBreakdown.reduce((s, h) => s + h.market_value, 0);
+    const closedReturns = closedBreakdown.reduce((s, h) => s + h.realised_pnl + h.dividends, 0);
+    // Total value = current holdings market value + all cash returned from closed positions
+    const totalValue = currentMarketValue + closedReturns;
+    const invested = all.reduce((s, h) => s + h.cost_basis, 0);
+    const capitalGain = all.reduce((s, h) => s + h.unrealised_pnl + h.realised_pnl, 0);
+    const income = all.reduce((s, h) => s + h.dividends, 0);
+    const totalGain = capitalGain + income;
+    const totalGainPct = invested > 0 ? (totalGain / invested * 100) : 0;
+    return { totalValue, invested, capitalGain, income, totalGain, totalGainPct };
+  }, [stockBreakdown, closedBreakdown]);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
   }
 
   if (!summary || summary.holdings.length === 0) {
@@ -192,8 +228,6 @@ export function PortfolioDashboard() {
     );
   }
 
-  const totalGain = summary.unrealised_pnl + summary.realised_pnl + summary.total_dividends;
-  const totalGainPct = summary.total_cost > 0 ? (totalGain / summary.total_cost * 100) : 0;
   const hasChartData = valueHistory.length > 1 || (performance && performance.portfolio.length > 1) || drawdown.length > 1;
 
   return (
@@ -202,46 +236,95 @@ export function PortfolioDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hero Summary */}
         <div className="bg-dark-panel border border-dark-border rounded-xl p-6 self-start">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-xs text-dark-muted uppercase tracking-wider">Total Investments</p>
-            <button
-              onClick={handleRebuild}
-              disabled={rebuilding}
-              title="Rebuild chart snapshots"
-              className="text-dark-muted hover:text-dark-accent transition-colors disabled:opacity-50"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={rebuilding ? 'animate-spin' : ''}>
-                <path d="M21 2v6h-6M3 12a9 9 0 0115.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 01-15.36 6.36L3 16" />
-              </svg>
-            </button>
-          </div>
-          <p className="text-3xl font-bold font-mono text-dark-fg">${formatCurrency(summary.total_value)}</p>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className={`text-sm font-mono font-bold ${PNL_COLORS(totalGainPct)}`}>
-              {totalGainPct >= 0 ? '+' : ''}{totalGainPct.toFixed(2)}%
-            </span>
-            <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded ${totalGain >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-              {totalGain >= 0 ? '+' : ''}${formatCurrency(totalGain)}
-            </span>
-          </div>
-          <div className="flex gap-6 mt-4 pt-4 border-t border-dark-border">
-            <div className="text-center">
-              <p className="text-lg font-bold font-mono text-dark-fg">${formatCurrency(summary.total_cost)}</p>
-              <p className="text-xs text-dark-muted">Invested</p>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-dark-muted uppercase tracking-wider">Total Investments</p>
+              <button
+                onClick={handleRebuild}
+                disabled={rebuilding}
+                title="Rebuild chart snapshots"
+                className="text-dark-muted hover:text-dark-accent transition-colors disabled:opacity-50"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={rebuilding ? 'animate-spin' : ''}>
+                  <path d="M21 2v6h-6M3 12a9 9 0 0115.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 01-15.36 6.36L3 16" />
+                </svg>
+              </button>
             </div>
-            <div className="text-center">
-              <p className={`text-lg font-bold font-mono ${PNL_COLORS(capitalGain)}`}>${formatCurrency(capitalGain)}</p>
-              <p className="text-xs text-dark-muted">Capital gain</p>
-            </div>
-            <div className="text-center">
-              <p className={`text-lg font-bold font-mono ${summary.total_dividends > 0 ? 'text-green-400' : 'text-dark-fg'}`}>${formatCurrency(summary.total_dividends)}</p>
-              <p className="text-xs text-dark-muted">Income gain</p>
+            <div className="flex bg-dark-bg rounded-lg p-0.5">
+              <button
+                onClick={() => setHeroView('current')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${heroView === 'current' ? 'bg-dark-accent text-white' : 'text-dark-muted hover:text-dark-fg'}`}
+              >
+                Current
+              </button>
+              <button
+                onClick={() => setHeroView('historical')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${heroView === 'historical' ? 'bg-dark-accent text-white' : 'text-dark-muted hover:text-dark-fg'}`}
+              >
+                Historical
+              </button>
             </div>
           </div>
+
+          {heroView === 'current' ? (
+            <>
+              <p className="text-3xl font-bold font-mono text-dark-fg">${formatCurrency(currentStats.totalValue)}</p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className={`text-sm font-mono font-bold ${PNL_COLORS(currentStats.totalGainPct)}`}>
+                  {currentStats.totalGainPct >= 0 ? '+' : ''}{currentStats.totalGainPct.toFixed(2)}%
+                </span>
+                <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded ${currentStats.totalGain >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {currentStats.totalGain >= 0 ? '+' : ''}${formatCurrency(currentStats.totalGain)}
+                </span>
+              </div>
+              <div className="flex gap-6 mt-4 pt-4 border-t border-dark-border">
+                <div className="text-center">
+                  <p className="text-lg font-bold font-mono text-dark-fg">${formatCurrency(currentStats.invested)}</p>
+                  <p className="text-xs text-dark-muted">Invested</p>
+                </div>
+                <div className="text-center">
+                  <p className={`text-lg font-bold font-mono ${PNL_COLORS(currentStats.capitalGain)}`}>${formatCurrency(currentStats.capitalGain)}</p>
+                  <p className="text-xs text-dark-muted">Unrealised gain</p>
+                </div>
+                <div className="text-center">
+                  <p className={`text-lg font-bold font-mono ${currentStats.income > 0 ? 'text-green-400' : 'text-dark-fg'}`}>${formatCurrency(currentStats.income)}</p>
+                  <p className="text-xs text-dark-muted">Dividends</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-bold font-mono text-dark-fg">${formatCurrency(historicalStats.totalValue)}</p>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className={`text-sm font-mono font-bold ${PNL_COLORS(historicalStats.totalGainPct)}`}>
+                  {historicalStats.totalGainPct >= 0 ? '+' : ''}{historicalStats.totalGainPct.toFixed(2)}%
+                </span>
+                <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded ${historicalStats.totalGain >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {historicalStats.totalGain >= 0 ? '+' : ''}${formatCurrency(historicalStats.totalGain)}
+                </span>
+              </div>
+              <div className="flex gap-6 mt-4 pt-4 border-t border-dark-border">
+                <div className="text-center">
+                  <p className="text-lg font-bold font-mono text-dark-fg">${formatCurrency(historicalStats.invested)}</p>
+                  <p className="text-xs text-dark-muted">Total invested</p>
+                </div>
+                <div className="text-center">
+                  <p className={`text-lg font-bold font-mono ${PNL_COLORS(historicalStats.capitalGain)}`}>${formatCurrency(historicalStats.capitalGain)}</p>
+                  <p className="text-xs text-dark-muted">Capital gain</p>
+                </div>
+                <div className="text-center">
+                  <p className={`text-lg font-bold font-mono ${historicalStats.income > 0 ? 'text-green-400' : 'text-dark-fg'}`}>${formatCurrency(historicalStats.income)}</p>
+                  <p className="text-xs text-dark-muted">Income gain</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Returns by Timeframe Grid */}
-        {valueHistory.length > 1 && <ReturnsGrid data={valueHistory} />}
+        {valueHistory.length > 1 && performance && performance.portfolio.length > 1 && (
+          <ReturnsGrid twrData={performance.portfolio} valueData={valueHistory} />
+        )}
       </div>
 
       {/* Metrics Row */}

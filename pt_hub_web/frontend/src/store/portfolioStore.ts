@@ -1,17 +1,24 @@
 import { create } from 'zustand';
+import { QueryClient } from '@tanstack/react-query';
 import { portfolioApi } from '../services/api';
 import type {
   Portfolio,
   Transaction,
-  PortfolioSummary,
-  ValueHistoryPoint,
-  PerformanceData,
-  DividendDataPoint,
-  SectorAllocation,
-  MonthlyReturn,
-  DrawdownPoint,
-  StockBreakdown,
 } from '../services/types';
+
+// Shared query client reference — set from main.tsx provider
+let _queryClient: QueryClient | null = null;
+export function setPortfolioQueryClient(qc: QueryClient) { _queryClient = qc; }
+
+function invalidateDashboard(portfolioId: number) {
+  _queryClient?.invalidateQueries({ queryKey: ['portfolio-dashboard', portfolioId] });
+}
+
+export function getDashboardFromCache(portfolioId: number) {
+  return _queryClient?.getQueryData<import('../hooks/usePortfolioDashboard').DashboardData>(
+    ['portfolio-dashboard', portfolioId],
+  ) ?? null;
+}
 
 type SubView = 'dashboard' | 'transactions' | 'import' | 'optimize';
 
@@ -25,18 +32,6 @@ interface PortfolioState {
   selectedId: number | null;
   loading: boolean;
 
-  // Dashboard data
-  summary: PortfolioSummary | null;
-  valueHistory: ValueHistoryPoint[];
-  performance: PerformanceData | null;
-  dividends: DividendDataPoint[];
-  allocation: SectorAllocation[];
-  monthlyReturns: MonthlyReturn[];
-  drawdown: DrawdownPoint[];
-  stockBreakdown: StockBreakdown[];
-  closedBreakdown: StockBreakdown[];
-  dashboardLoading: boolean;
-
   // Transactions
   transactions: Transaction[];
   txnTotal: number;
@@ -48,7 +43,6 @@ interface PortfolioState {
   selectPortfolio: (id: number | null) => void;
   createPortfolio: (name: string, currency?: string, benchmark?: string) => Promise<number>;
   deletePortfolio: (id: number) => Promise<void>;
-  fetchDashboard: (id: number) => Promise<void>;
   fetchTransactions: (id: number, page?: number) => Promise<void>;
   addTransaction: (portfolioId: number, txn: {
     ticker: string; type: string; date: string; quantity: number; price?: number; fees?: number; notes?: string;
@@ -68,17 +62,6 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   portfolios: [],
   selectedId: null,
   loading: false,
-
-  summary: null,
-  valueHistory: [],
-  performance: null,
-  dividends: [],
-  allocation: [],
-  monthlyReturns: [],
-  drawdown: [],
-  stockBreakdown: [],
-  closedBreakdown: [],
-  dashboardLoading: false,
 
   transactions: [],
   txnTotal: 0,
@@ -101,10 +84,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   },
 
   selectPortfolio: (id) => {
-    set({ selectedId: id, summary: null, valueHistory: [], performance: null, dividends: [], allocation: [], monthlyReturns: [], drawdown: [], stockBreakdown: [], closedBreakdown: [], transactions: [], txnTotal: 0, txnPage: 0 });
-    if (id !== null) {
-      get().fetchDashboard(id);
-    }
+    set({ selectedId: id, transactions: [], txnTotal: 0, txnPage: 0 });
   },
 
   createPortfolio: async (name, currency, benchmark) => {
@@ -121,36 +101,6 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     if (selectedId === id) {
       const { portfolios } = get();
       set({ selectedId: portfolios.length > 0 ? portfolios[0].id : null });
-      if (portfolios.length > 0) get().fetchDashboard(portfolios[0].id);
-    }
-  },
-
-  fetchDashboard: async (id) => {
-    set({ dashboardLoading: true });
-    try {
-      const [summary, vh, perf, div, alloc, ret, dd, sb] = await Promise.allSettled([
-        portfolioApi.getHoldings(id),
-        portfolioApi.getValueHistory(id),
-        portfolioApi.getPerformance(id),
-        portfolioApi.getDividends(id),
-        portfolioApi.getAllocation(id),
-        portfolioApi.getReturns(id),
-        portfolioApi.getDrawdown(id),
-        portfolioApi.getStockBreakdown(id),
-      ]);
-      set({
-        summary: summary.status === 'fulfilled' ? summary.value : null,
-        valueHistory: vh.status === 'fulfilled' ? vh.value.data : [],
-        performance: perf.status === 'fulfilled' ? perf.value : null,
-        dividends: div.status === 'fulfilled' ? div.value.data : [],
-        allocation: alloc.status === 'fulfilled' ? alloc.value.data : [],
-        monthlyReturns: ret.status === 'fulfilled' ? ret.value.data : [],
-        drawdown: dd.status === 'fulfilled' ? dd.value.data : [],
-        stockBreakdown: sb.status === 'fulfilled' ? sb.value.data : [],
-        closedBreakdown: sb.status === 'fulfilled' ? (sb.value.closed || []) : [],
-      });
-    } finally {
-      set({ dashboardLoading: false });
     }
   },
 
@@ -167,38 +117,35 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   addTransaction: async (portfolioId, txn) => {
     await portfolioApi.addTransaction(portfolioId, txn);
     await get().fetchTransactions(portfolioId, 0);
-    await get().fetchDashboard(portfolioId);
+    invalidateDashboard(portfolioId);
   },
 
   deleteTransaction: async (portfolioId, txnId) => {
     await portfolioApi.deleteTransaction(portfolioId, txnId);
     const { txnPage } = get();
     await get().fetchTransactions(portfolioId, txnPage);
-    await get().fetchDashboard(portfolioId);
+    invalidateDashboard(portfolioId);
   },
 
   batchDeleteTransactions: async (portfolioId, ids) => {
     await portfolioApi.batchDeleteTransactions(portfolioId, ids);
     const { txnPage } = get();
     await get().fetchTransactions(portfolioId, txnPage);
-    await get().fetchDashboard(portfolioId);
+    invalidateDashboard(portfolioId);
   },
 
   rebuildSnapshots: async (portfolioId) => {
     await portfolioApi.rebuildSnapshots(portfolioId);
-    await get().fetchDashboard(portfolioId);
+    invalidateDashboard(portfolioId);
   },
 
   changeBenchmark: async (portfolioId, benchmark) => {
     await portfolioApi.updatePortfolio(portfolioId, { benchmark });
-    // Update local portfolio list
     set(state => ({
       portfolios: state.portfolios.map(p =>
         p.id === portfolioId ? { ...p, benchmark } : p
       ),
     }));
-    // Re-fetch just the performance data with new benchmark
-    const perf = await portfolioApi.getPerformance(portfolioId);
-    set({ performance: perf });
+    invalidateDashboard(portfolioId);
   },
 }));

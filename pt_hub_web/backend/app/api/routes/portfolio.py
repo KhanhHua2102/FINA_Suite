@@ -820,12 +820,26 @@ async def get_holdings(portfolio_id: int):
         summary["beta"] = 0
 
     # Save yesterday's snapshot if missing (today's market data may not be final)
+    # Compute cumulative cash_flow from transactions so TWR calculation stays correct
     if summary["total_value"] > 0:
         from datetime import timedelta
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         existing = db.get_snapshots(portfolio_id, start_date=yesterday, end_date=yesterday)
         if not existing:
-            db.upsert_snapshot(portfolio_id, yesterday, summary["total_value"], summary["total_cost"])
+            txns_all, _ = db.get_transactions(portfolio_id, limit=100000)
+            cumulative_cf = 0.0
+            for t in txns_all:
+                if t["date"] > yesterday:
+                    break
+                qty = t.get("quantity", 0) or 0
+                price = t.get("price", 0) or 0
+                fees = t.get("fees", 0) or 0
+                if t["type"] == "BUY":
+                    cumulative_cf += qty * price + fees
+                elif t["type"] == "SELL":
+                    cumulative_cf -= qty * price - fees
+            db.upsert_snapshot(portfolio_id, yesterday, summary["total_value"], summary["total_cost"],
+                               cash_flow=round(cumulative_cf, 2))
 
     return summary
 
@@ -840,10 +854,15 @@ async def get_value_history(portfolio_id: int):
 
     # Backfill snapshots using transaction replay for accurate TWR
     snapshots = db.get_snapshots(portfolio_id)
-    if len(snapshots) < 5:
+    needs_full_backfill = len(snapshots) < 5
+    # Also check if any snapshots are missing cash_flow (legacy data)
+    # Use 'is None' — cash_flow=0 is valid (before first transaction)
+    if not needs_full_backfill and any(s.get("cash_flow") is None for s in snapshots[:10]):
+        needs_full_backfill = True
+    if needs_full_backfill:
         holdings = db.get_holdings(portfolio_id)
         if holdings:
-            await asyncio.to_thread(backfill_snapshots, db, portfolio_id, holdings)
+            await asyncio.to_thread(backfill_snapshots, db, portfolio_id, holdings, force_deposits=True)
             snapshots = db.get_snapshots(portfolio_id)
 
     # Exclude today — market data may not be available yet

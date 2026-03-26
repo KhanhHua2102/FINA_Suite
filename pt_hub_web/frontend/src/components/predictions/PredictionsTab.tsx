@@ -14,11 +14,9 @@ interface PredictionData {
 }
 
 function signalLabel(long: number, short: number): { text: string; color: string } {
-  const net = long - short;
-  if (net >= 5) return { text: 'Strong Buy', color: 'text-green-400' };
-  if (net >= 2) return { text: 'Buy', color: 'text-green-300' };
-  if (net <= -5) return { text: 'Strong Sell', color: 'text-red-400' };
-  if (net <= -2) return { text: 'Sell', color: 'text-red-300' };
+  if (long > 0 && short === 0) return { text: 'Buy', color: 'text-green-300' };
+  if (short > 0 && long === 0) return { text: 'Sell', color: 'text-red-300' };
+  if (long > 0 && short > 0) return { text: 'Mixed', color: 'text-yellow-300' };
   return { text: 'Neutral', color: 'text-dark-muted' };
 }
 
@@ -60,14 +58,12 @@ export function PredictionsTab() {
 
   const overallSignal = useMemo(() => {
     if (!data?.signals) return null;
-    let totalLong = 0, totalShort = 0, count = 0;
+    let totalLong = 0, totalShort = 0;
     for (const tf of Object.values(data.signals)) {
       totalLong += tf.long;
       totalShort += tf.short;
-      count++;
     }
-    if (count === 0) return null;
-    return signalLabel(totalLong / count, totalShort / count);
+    return signalLabel(totalLong, totalShort);
   }, [data]);
 
   return (
@@ -125,12 +121,14 @@ export function PredictionsTab() {
                       <div>
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-green-400">Buy Signal</span>
-                          <span className="text-dark-muted">{sig.long}/7</span>
+                          <span className={sig.long > 0 ? 'text-green-400 font-medium' : 'text-dark-muted'}>
+                            {sig.long > 0 ? 'Active' : 'Inactive'}
+                          </span>
                         </div>
                         <div className="h-3 bg-dark-bg2 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-green-500 rounded-full transition-all duration-500"
-                            style={{ width: `${(sig.long / 7) * 100}%` }}
+                            style={{ width: `${sig.long * 100}%` }}
                           />
                         </div>
                       </div>
@@ -138,12 +136,14 @@ export function PredictionsTab() {
                       <div>
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-red-400">Sell Signal</span>
-                          <span className="text-dark-muted">{sig.short}/7</span>
+                          <span className={sig.short > 0 ? 'text-red-400 font-medium' : 'text-dark-muted'}>
+                            {sig.short > 0 ? 'Active' : 'Inactive'}
+                          </span>
                         </div>
                         <div className="h-3 bg-dark-bg2 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-red-500 rounded-full transition-all duration-500"
-                            style={{ width: `${(sig.short / 7) * 100}%` }}
+                            style={{ width: `${sig.short * 100}%` }}
                           />
                         </div>
                       </div>

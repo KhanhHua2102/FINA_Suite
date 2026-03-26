@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { portfolioApi } from '../../services/api';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import type { ImportPreviewResult, ImportConfirmResult } from '../../services/types';
@@ -10,7 +11,8 @@ const ALL_FIELDS = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS] as const;
 type MappingField = (typeof ALL_FIELDS)[number];
 
 export function ImportWizard() {
-  const { selectedId, fetchDashboard, fetchTransactions, setSubView } = usePortfolioStore();
+  const { selectedId, fetchTransactions, setSubView } = usePortfolioStore();
+  const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<'upload' | 'map' | 'duplicates' | 'done'>('upload');
@@ -66,7 +68,7 @@ export function ImportWizard() {
       } else {
         setImportResult({ imported: result.imported ?? 0 });
         setStep('done');
-        fetchDashboard(selectedId);
+        queryClient.invalidateQueries({ queryKey: ['portfolio-dashboard', selectedId] });
         fetchTransactions(selectedId);
       }
     } catch (e) {
@@ -88,7 +90,7 @@ export function ImportWizard() {
       );
       setImportResult({ imported: result.imported ?? 0 });
       setStep('done');
-      fetchDashboard(selectedId);
+      queryClient.invalidateQueries({ queryKey: ['portfolio-dashboard', selectedId] });
       fetchTransactions(selectedId);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed');

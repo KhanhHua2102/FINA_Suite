@@ -90,6 +90,55 @@ export interface AnalysisReport {
   news?: { headline: string; source: string; datetime: number; url?: string }[];
   raw_reasoning?: string;
   model_used?: string;
+  strategy?: string;
+}
+
+export interface AnalysisStrategy {
+  key: string;
+  name: string;
+  description: string;
+}
+
+export interface BacktestResult {
+  id: number;
+  report_id: number;
+  ticker: string;
+  analysis_date: string;
+  evaluation_date: string;
+  entry_price: number;
+  exit_price: number;
+  target_price: number;
+  stop_loss: number;
+  decision: 'BUY' | 'HOLD' | 'SELL';
+  target_hit: boolean;
+  stop_hit: boolean;
+  direction_correct: boolean;
+  return_pct: number;
+  days_held: number;
+  outcome: 'WIN' | 'LOSS' | 'NEUTRAL';
+}
+
+export interface BacktestSummary {
+  total: number;
+  win_rate: number | null;
+  direction_accuracy: number | null;
+  avg_return: number | null;
+  wins: number;
+  losses: number;
+  neutrals: number;
+  newly_evaluated?: number;
+  by_decision: Record<string, { count: number; win_rate: number | null; avg_return: number }>;
+}
+
+export interface MarketReview {
+  id: number;
+  date: string;
+  indices: Record<string, { name: string; price: number; change_pct: number }>;
+  sectors: { etf: string; name: string; change_pct: number }[];
+  summary: string;
+  fear_greed: { score: number; rating: string; previous_close?: number } | null;
+  model_used: string;
+  created_at: string;
 }
 
 // Portfolio types
@@ -284,6 +333,79 @@ export interface UpcomingEvent {
   ex_date?: string;
   record_date?: string;
   payment_date?: string;
+  est_amount?: number;
+}
+
+// Property types
+export interface InvestmentProperty {
+  id: number;
+  name: string;
+  address: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  property_type: 'house' | 'apartment' | 'townhouse' | 'land' | 'villa' | 'unit';
+  bedrooms: number;
+  bathrooms: number;
+  parking: number;
+  land_size_sqm: number | null;
+  purchase_date: string | null;
+  purchase_price: number | null;
+  current_estimate: number | null;
+  estimate_source?: string | null;
+  rental_income_weekly: number;
+  loan_amount: number;
+  loan_rate_pct: number;
+  notes: string | null;
+  projection_params?: Record<string, number> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyValuation {
+  id: number;
+  property_id: number;
+  date: string;
+  estimated_value: number;
+  source: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface SuburbMetric {
+  id: number;
+  suburb: string;
+  state: string;
+  postcode: string;
+  date: string;
+  metric_type: string;
+  value: number;
+  source: string;
+}
+
+export interface SuburbSummary {
+  suburb: string;
+  state: string;
+  metrics: Record<string, { value: number; date: string; source: string }>;
+}
+
+export interface FavoriteSuburb {
+  id: number;
+  suburb: string;
+  state: string;
+  postcode: string;
+  created_at: string;
+}
+
+export interface PropertyDashboardSummary {
+  total_properties: number;
+  total_purchase_value: number;
+  total_current_estimate: number;
+  total_equity: number;
+  total_weekly_rent: number;
+  gross_yield_pct: number;
+  total_loan_amount: number;
+  total_loan_repayment_monthly: number;
 }
 
 // WebSocket event types
@@ -316,4 +438,5 @@ export interface Settings {
   candles_limit: number;
   ui_refresh_seconds: number;
   chart_refresh_seconds: number;
+  ws_token?: string;
 }

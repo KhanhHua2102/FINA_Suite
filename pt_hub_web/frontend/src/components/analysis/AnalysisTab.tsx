@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+import { Select, SelectItem } from '@heroui/select';
+import { Button } from '@heroui/button';
 import { useSettingsStore, selectTickers } from '../../store/settingsStore';
 import { useAnalysisStore } from '../../store/analysisStore';
-import { analysisApi } from '../../services/api';
+import { analysisApi, marketApi } from '../../services/api';
 import { AnalysisReportCard } from './AnalysisReportCard';
 import { AnalysisLogStream } from './AnalysisLogStream';
 import { AnalysisProgressBar } from './AnalysisProgressBar';
 import { PortfolioAnalysisView } from './PortfolioAnalysisView';
+import { AccuracyView } from './AccuracyView';
 import { DraggableTickerBar } from '../common/DraggableTickerBar';
-import type { AnalysisReport } from '../../services/types';
+import type { AnalysisReport, AnalysisStrategy, MarketReview } from '../../services/types';
 
-type AnalysisViewMode = 'single' | 'portfolio';
+type AnalysisViewMode = 'single' | 'portfolio' | 'accuracy';
 
 export function AnalysisTab() {
   const tickers = useSettingsStore(selectTickers);
@@ -32,7 +35,17 @@ export function AnalysisTab() {
   const [error, setError] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+  const [strategies, setStrategies] = useState<AnalysisStrategy[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState('default');
+  const [marketReview, setMarketReview] = useState<MarketReview | null>(null);
+  const [showMarket, setShowMarket] = useState(false);
   const analysisStartTime = useRef<number>(0);
+
+  // Load strategies + market review on mount
+  useEffect(() => {
+    analysisApi.getStrategies().then((r) => setStrategies(r.strategies)).catch(() => {});
+    marketApi.getReview().then((r) => setMarketReview(r.review)).catch(() => {});
+  }, []);
 
   // Select first ticker on load
   useEffect(() => {
@@ -71,7 +84,7 @@ export function AnalysisTab() {
     analysisStartTime.current = Date.now();
 
     try {
-      await analysisApi.run(selectedTicker);
+      await analysisApi.run(selectedTicker, selectedStrategy);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start analysis');
       setRunning(false, null);
@@ -102,31 +115,40 @@ export function AnalysisTab() {
         style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}
       >
         <div className="flex rounded-xl p-1" style={{ background: '#27272a' }}>
-          <button
+          <Button
+            variant={viewMode === 'single' ? 'solid' : 'light'}
+            color={viewMode === 'single' ? 'primary' : 'default'}
+            radius="full"
+            size="sm"
             onClick={() => setViewMode('single')}
-            className="px-5 py-2 text-sm font-medium rounded-lg transition-all"
-            style={{
-              background: viewMode === 'single' ? '#006FEE' : 'transparent',
-              color: viewMode === 'single' ? '#ffffff' : '#a1a1aa',
-            }}
           >
             Single Ticker
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={viewMode === 'portfolio' ? 'solid' : 'light'}
+            color={viewMode === 'portfolio' ? 'primary' : 'default'}
+            radius="full"
+            size="sm"
             onClick={() => setViewMode('portfolio')}
-            className="px-5 py-2 text-sm font-medium rounded-lg transition-all"
-            style={{
-              background: viewMode === 'portfolio' ? '#006FEE' : 'transparent',
-              color: viewMode === 'portfolio' ? '#ffffff' : '#a1a1aa',
-            }}
           >
             My Portfolio
-          </button>
+          </Button>
+          <Button
+            variant={viewMode === 'accuracy' ? 'solid' : 'light'}
+            color={viewMode === 'accuracy' ? 'primary' : 'default'}
+            radius="full"
+            size="sm"
+            onClick={() => setViewMode('accuracy')}
+          >
+            Accuracy
+          </Button>
         </div>
       </div>
 
       {viewMode === 'portfolio' ? (
         <PortfolioAnalysisView />
+      ) : viewMode === 'accuracy' ? (
+        <AccuracyView />
       ) : (
       <>
       <DraggableTickerBar
@@ -139,49 +161,133 @@ export function AnalysisTab() {
         <div className="space-y-4 max-w-4xl mx-auto">
           {/* Controls */}
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              color="primary"
+              size="sm"
               onClick={handleRunAnalysis}
-              disabled={isRunning}
-              className={`btn text-sm font-medium transition-all ${
-                isRunning
-                  ? 'btn-secondary cursor-not-allowed'
-                  : 'btn-primary'
-              }`}
-              style={
-                isRunning
-                  ? { color: '#a1a1aa' }
-                  : undefined
-              }
+              isDisabled={isRunning}
             >
               {isRunning && runningTicker === selectedTicker
                 ? 'Analyzing...'
                 : isRunning
                 ? `Busy (${runningTicker})`
                 : 'Run Analysis'}
-            </button>
+            </Button>
+
+            {strategies.length > 1 && (
+              <Select
+                aria-label="Strategy"
+                selectedKeys={new Set([selectedStrategy])}
+                onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setSelectedStrategy(v); }}
+                isDisabled={isRunning}
+                variant="bordered"
+                size="sm"
+                classNames={{ base: 'max-w-56' }}
+                title={strategies.find((s) => s.key === selectedStrategy)?.description}
+              >
+                {strategies.map((s) => (
+                  <SelectItem key={s.key}>{s.name}</SelectItem>
+                ))}
+              </Select>
+            )}
 
             {analysisLogs.length > 0 && (
-              <button
+              <Button
+                variant="flat"
+                size="sm"
                 onClick={() => setShowLogs(!showLogs)}
-                className="btn btn-secondary text-sm font-medium transition-all"
-                style={{ color: '#a1a1aa' }}
               >
                 {showLogs ? 'Hide Logs' : 'Show Logs'}
-              </button>
+              </Button>
             )}
 
             {report && (
-              <button
+              <Button
+                variant="flat"
+                size="sm"
                 onClick={handleLoadHistory}
-                className="btn btn-secondary text-sm font-medium transition-all"
-                style={{ color: '#a1a1aa' }}
               >
                 {showHistory ? 'Hide History' : 'View History'}
-              </button>
+              </Button>
             )}
 
             {error && <span className="text-sm" style={{ color: '#f31260' }}>{error}</span>}
           </div>
+
+          {/* Market Overview (collapsible) */}
+          {marketReview && (
+            <div className="rounded-xl" style={{ background: '#18181b', border: '1px solid #27272a' }}>
+              <button
+                onClick={() => setShowMarket(!showMarket)}
+                className="w-full flex items-center justify-between p-4 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium" style={{ color: '#ECEDEE' }}>Market Overview</span>
+                  <div className="flex items-center gap-2">
+                    {Object.values(marketReview.indices).map((idx) => (
+                      <span
+                        key={idx.name}
+                        className="text-xs px-2 py-0.5 rounded"
+                        style={{
+                          background: idx.change_pct >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: idx.change_pct >= 0 ? '#17c964' : '#f31260',
+                        }}
+                      >
+                        {idx.name} {idx.change_pct >= 0 ? '+' : ''}{idx.change_pct}%
+                      </span>
+                    ))}
+                    {marketReview.fear_greed && (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded"
+                        style={{ background: '#27272a', color: '#a1a1aa' }}
+                      >
+                        F&G: {marketReview.fear_greed.score}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs" style={{ color: '#71717a' }}>{showMarket ? 'Hide' : 'Show'}</span>
+              </button>
+              {showMarket && (
+                <div className="px-4 pb-4 space-y-3">
+                  <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#a1a1aa' }}>
+                    {marketReview.summary}
+                  </p>
+                  {marketReview.sectors.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {marketReview.sectors.slice(0, 5).map((s) => (
+                        <span
+                          key={s.etf}
+                          className="text-xs px-2 py-0.5 rounded"
+                          style={{
+                            background: s.change_pct >= 0 ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                            color: s.change_pct >= 0 ? '#17c964' : '#f31260',
+                          }}
+                        >
+                          {s.name} {s.change_pct >= 0 ? '+' : ''}{s.change_pct}%
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs" style={{ color: '#52525b' }}>{marketReview.date}</span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const r = await marketApi.forceGenerate();
+                          setMarketReview(r.review);
+                        } catch { /* ignore */ }
+                      }}
+                      className="text-xs underline"
+                      style={{ color: '#52525b' }}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Progress bar during analysis */}
           {isRunning && runningTicker === selectedTicker && (
@@ -260,12 +366,11 @@ function HistoryRow({ report }: { report: AnalysisReport }) {
       className="rounded-xl"
       style={{ background: '#18181b', border: '1px solid #27272a' }}
     >
-      <button
+      <Button
+        variant="light"
+        size="sm"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left transition-colors rounded-xl"
-        style={{ background: 'transparent' }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = '#27272a'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+        className="w-full flex items-center justify-between p-4 text-left rounded-xl h-auto"
       >
         <div className="flex items-center gap-4">
           <span className="font-bold" style={{ color: decisionColor }}>{report.decision}</span>
@@ -279,7 +384,7 @@ function HistoryRow({ report }: { report: AnalysisReport }) {
         <span className="text-xs font-mono" style={{ color: '#a1a1aa' }}>
           {new Date(report.created_at).toLocaleString()}
         </span>
-      </button>
+      </Button>
       {expanded && (
         <div className="px-4 pb-4">
           <AnalysisReportCard report={report} />

@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import { Button } from '@heroui/button';
+import { Select, SelectItem } from '@heroui/select';
 import { useQueryClient } from '@tanstack/react-query';
 import { portfolioApi } from '../../services/api';
 import { usePortfolioStore } from '../../store/portfolioStore';
@@ -125,22 +127,12 @@ export function ImportWizard() {
           <p style={{ color: '#a1a1aa' }}>{importResult.imported} transactions imported successfully.</p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => setSubView('dashboard')}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors text-white"
-            style={{ background: '#006FEE' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-          >
+          <Button color="primary" size="md" radius="lg" onClick={() => setSubView('dashboard')}>
             View Dashboard
-          </button>
-          <button
-            onClick={() => setSubView('transactions')}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors"
-            style={{ background: '#27272a', color: '#ECEDEE' }}
-          >
+          </Button>
+          <Button variant="flat" size="md" radius="lg" onClick={() => setSubView('transactions')}>
             View Transactions
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -223,33 +215,17 @@ export function ImportWizard() {
         {error && <p className="text-sm" style={{ color: '#f31260' }}>{error}</p>}
 
         <div className="flex gap-3">
-          <button
-            onClick={() => { setStep('map'); setDupInfo(null); setError(''); }}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors"
-            style={{ background: '#27272a', color: '#ECEDEE' }}
-          >
+          <Button variant="flat" size="md" radius="lg" onClick={() => { setStep('map'); setDupInfo(null); setError(''); }}>
             Back
-          </button>
+          </Button>
           {dupInfo.new_count! > 0 && (
-            <button
-              onClick={() => handleDuplicateChoice('new_only')}
-              disabled={loading}
-              className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors text-white disabled:opacity-50"
-              style={{ background: '#006FEE' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-            >
+            <Button color="primary" size="md" radius="lg" isDisabled={loading} onClick={() => handleDuplicateChoice('new_only')}>
               {loading ? 'Importing...' : `Import ${dupInfo.new_count} New Only`}
-            </button>
+            </Button>
           )}
-          <button
-            onClick={() => handleDuplicateChoice('import_all')}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
-            style={{ background: '#27272a', color: '#ECEDEE' }}
-          >
+          <Button variant="flat" size="md" radius="lg" isDisabled={loading} onClick={() => handleDuplicateChoice('import_all')}>
             {loading ? 'Importing...' : `Import All ${dupInfo.total_count}`}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -272,20 +248,17 @@ export function ImportWizard() {
         >
           <div className="flex items-center gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: '#a1a1aa' }}>
-                File Currency *
-              </label>
-              <select
-                value={currency}
-                onChange={e => setCurrency(e.target.value)}
-                className="py-2 px-3 text-sm rounded-xl"
-                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+              <Select
+                label="File Currency *"
+                labelPlacement="outside"
+                selectedKeys={new Set([currency])}
+                onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setCurrency(v); }}
+                variant="bordered"
+                size="sm"
               >
-                <option value="AUD">AUD -- Australian Dollar</option>
-                <option value="USD">USD -- US Dollar</option>
-              </select>
+                <SelectItem key="AUD">AUD -- Australian Dollar</SelectItem>
+                <SelectItem key="USD">USD -- US Dollar</SelectItem>
+              </Select>
             </div>
             {currency === 'USD' && (
               <p className="text-xs mt-4" style={{ color: '#a1a1aa' }}>
@@ -303,22 +276,18 @@ export function ImportWizard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {ALL_FIELDS.map(field => (
               <div key={field}>
-                <label className="text-xs font-semibold uppercase tracking-wider block mb-1.5" style={{ color: '#a1a1aa' }}>
-                  {field} {REQUIRED_FIELDS.includes(field as typeof REQUIRED_FIELDS[number]) ? '*' : '(optional)'}
-                </label>
-                <select
-                  value={mapping[field] || ''}
-                  onChange={e => updateMapping(field, e.target.value)}
-                  className="w-full py-2 px-3 text-sm rounded-xl"
-                  style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                <Select
+                  label={`${field} ${REQUIRED_FIELDS.includes(field as typeof REQUIRED_FIELDS[number]) ? '*' : '(optional)'}`}
+                  labelPlacement="outside"
+                  placeholder="-- Select column --"
+                  items={preview.columns.map(col => ({ key: col, label: col }))}
+                  selectedKeys={mapping[field] ? new Set([mapping[field]]) : new Set<string>()}
+                  onSelectionChange={keys => { const v = Array.from(keys)[0] as string; updateMapping(field, v || ''); }}
+                  variant="bordered"
+                  size="sm"
                 >
-                  <option value="">-- Select column --</option>
-                  {preview.columns.map(col => (
-                    <option key={col} value={col}>{col}</option>
-                  ))}
-                </select>
+                  {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+                </Select>
               </div>
             ))}
           </div>
@@ -377,23 +346,12 @@ export function ImportWizard() {
         {error && <p className="text-sm" style={{ color: '#f31260' }}>{error}</p>}
 
         <div className="flex gap-3">
-          <button
-            onClick={() => { setStep('upload'); setPreview(null); setError(''); }}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors"
-            style={{ background: '#27272a', color: '#ECEDEE' }}
-          >
+          <Button variant="flat" size="md" radius="lg" onClick={() => { setStep('upload'); setPreview(null); setError(''); }}>
             Back
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-semibold rounded-xl transition-colors text-white disabled:opacity-50"
-            style={{ background: '#006FEE' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-          >
+          </Button>
+          <Button color="primary" size="md" radius="lg" isDisabled={loading} onClick={handleConfirm}>
             {loading ? 'Checking...' : `Import ${preview.row_count} Transactions`}
-          </button>
+          </Button>
         </div>
       </div>
     );

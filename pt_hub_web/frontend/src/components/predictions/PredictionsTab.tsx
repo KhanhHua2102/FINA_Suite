@@ -1,17 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSettingsStore, selectTickers, selectTimeframes } from '../../store/settingsStore';
-import { predictionsApi } from '../../services/api';
+import { usePredictions } from '../../hooks/useTrainingData';
 import { DraggableTickerBar } from '../common/DraggableTickerBar';
-
-interface PredictionData {
-  signals: Record<string, {
-    long: number;
-    short: number;
-    high_bound: number;
-    low_bound: number;
-  }>;
-  current_price: number;
-}
 
 function signalLabel(long: number, short: number): { text: string; color: string } {
   if (long > 0 && short === 0) return { text: 'Buy', color: '#17c964' };
@@ -24,9 +14,6 @@ export function PredictionsTab() {
   const tickers = useSettingsStore(selectTickers);
   const timeframes = useSettingsStore(selectTimeframes);
   const [selectedTicker, setSelectedTicker] = useState('');
-  const [data, setData] = useState<PredictionData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (tickers.length > 0 && !selectedTicker) {
@@ -34,27 +21,8 @@ export function PredictionsTab() {
     }
   }, [tickers, selectedTicker]);
 
-  useEffect(() => {
-    if (!selectedTicker) return;
-
-    let cancelled = false;
-    const fetchData = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const result = await predictionsApi.get(selectedTicker);
-        if (!cancelled) setData(result);
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load predictions');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [selectedTicker]);
+  const { data, isLoading: loading, error: queryError } = usePredictions(selectedTicker);
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load predictions') : '';
 
   const overallSignal = useMemo(() => {
     if (!data?.signals) return null;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 const NAV_ITEMS = [
   { id: 'portfolio', label: 'Portfolio', icon: PortfolioIcon },
+  { id: 'property', label: 'Property', icon: PropertyIcon },
   { id: 'analysis', label: 'Analysis', icon: AnalysisIcon },
   { id: 'training', label: 'Training', icon: TrainingIcon },
   { id: 'predictions', label: 'Predictions', icon: PredictionsIcon },
@@ -143,6 +144,14 @@ function AnalysisIcon({ active }: { active: boolean }) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent-500)' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
+function PropertyIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? 'var(--accent-500)' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6" />
     </svg>
   );
 }

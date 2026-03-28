@@ -24,6 +24,16 @@ import type {
   DrawdownPoint,
   StockBreakdown,
   UpcomingEvent,
+  InvestmentProperty,
+  PropertyValuation,
+  SuburbMetric,
+  SuburbSummary,
+  FavoriteSuburb,
+  PropertyDashboardSummary,
+  AnalysisStrategy,
+  MarketReview,
+  BacktestResult,
+  BacktestSummary,
 } from './types';
 
 const API_BASE = '/api';
@@ -129,8 +139,14 @@ export const settingsApi = {
 
 // Analysis endpoints
 export const analysisApi = {
-  run: (ticker: string) =>
-    fetchJson<{ status: string; ticker: string }>(`/analysis/run/${ticker}`, { method: 'POST' }),
+  run: (ticker: string, strategy = 'default') =>
+    fetchJson<{ status: string; ticker: string }>(
+      `/analysis/run/${ticker}?strategy=${encodeURIComponent(strategy)}`,
+      { method: 'POST' },
+    ),
+
+  getStrategies: () =>
+    fetchJson<{ strategies: AnalysisStrategy[] }>('/analysis/strategies'),
 
   getStatus: () =>
     fetchJson<{ running: boolean; ticker: string | null }>('/analysis/status'),
@@ -145,6 +161,41 @@ export const analysisApi = {
 
   getReport: (id: number) =>
     fetchJson<AnalysisReport>(`/analysis/report/${id}`),
+};
+
+// Market endpoints
+export const marketApi = {
+  getReview: () =>
+    fetchJson<{ review: MarketReview | null }>('/market/review/latest'),
+
+  generateReview: () =>
+    fetchJson<{ review: MarketReview }>('/market/review', { method: 'GET' }),
+
+  forceGenerate: () =>
+    fetchJson<{ review: MarketReview }>('/market/review/generate', { method: 'POST' }),
+};
+
+// Backtest endpoints
+export const backtestApi = {
+  run: (ticker?: string, forwardDays = 10) =>
+    fetchJson<{ status: string; summary: BacktestSummary }>('/backtest/run', {
+      method: 'POST',
+      body: JSON.stringify({ ticker: ticker || null, forward_days: forwardDays }),
+    }),
+
+  getResults: (ticker?: string, limit = 50, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (ticker) params.set('ticker', ticker);
+    return fetchJson<{ results: BacktestResult[]; total: number }>(`/backtest/results?${params}`);
+  },
+
+  getSummary: (ticker?: string) => {
+    const params = ticker ? `?ticker=${encodeURIComponent(ticker)}` : '';
+    return fetchJson<{ summary: BacktestSummary }>(`/backtest/summary${params}`);
+  },
+
+  getResultForReport: (reportId: number) =>
+    fetchJson<{ result: BacktestResult | null }>(`/backtest/results/${reportId}`),
 };
 
 // Portfolio endpoints
@@ -302,6 +353,105 @@ export const portfolioApi = {
 
   getUpcomingEvents: (portfolioId: number) =>
     fetchJson<{ data: UpcomingEvent[] }>(`/portfolio/portfolios/${portfolioId}/upcoming-events`),
+};
+
+// Property endpoints
+export const propertyApi = {
+  createProperty: (data: Partial<InvestmentProperty>) =>
+    fetchJson<{ id: number; name: string }>('/property/properties', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  listProperties: () =>
+    fetchJson<{ properties: InvestmentProperty[] }>('/property/properties'),
+
+  getProperty: (id: number) =>
+    fetchJson<InvestmentProperty>(`/property/properties/${id}`),
+
+  updateProperty: (id: number, data: Partial<InvestmentProperty>) =>
+    fetchJson<{ status: string }>(`/property/properties/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  saveProjectionParams: (id: number, params: Record<string, number>) =>
+    fetchJson<{ status: string }>(`/property/properties/${id}/projection-params`, {
+      method: 'PUT',
+      body: JSON.stringify(params),
+    }),
+
+  deleteProperty: (id: number) =>
+    fetchJson<{ status: string }>(`/property/properties/${id}`, { method: 'DELETE' }),
+
+  // Valuations
+  addValuation: (propertyId: number, data: { date: string; estimated_value: number; source?: string; notes?: string }) =>
+    fetchJson<{ id: number }>(`/property/properties/${propertyId}/valuations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getValuations: (propertyId: number) =>
+    fetchJson<{ valuations: PropertyValuation[] }>(`/property/properties/${propertyId}/valuations`),
+
+  deleteValuation: (id: number) =>
+    fetchJson<{ status: string; property_id: number }>(`/property/valuations/${id}`, { method: 'DELETE' }),
+
+  fetchValuationHistory: (propertyId: number) =>
+    fetchJson<{ added: number; total_fetched: number }>(`/property/properties/${propertyId}/valuations/fetch`, {
+      method: 'POST',
+    }),
+
+  // Dashboard
+  getDashboard: () =>
+    fetchJson<PropertyDashboardSummary>('/property/dashboard'),
+
+  // Suburb metrics
+  addSuburbMetric: (data: {
+    suburb: string; state: string; postcode: string;
+    date: string; metric_type: string; value: number; source?: string;
+  }) =>
+    fetchJson<{ status: string }>('/property/suburb-metrics', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getSuburbMetrics: (suburb: string, state: string, metricType?: string) => {
+    const params = new URLSearchParams();
+    if (metricType) params.set('metric_type', metricType);
+    return fetchJson<{ metrics: SuburbMetric[] }>(
+      `/property/suburb-metrics/${encodeURIComponent(suburb)}/${state}?${params}`
+    );
+  },
+
+  getSuburbSummary: (suburb: string, state: string) =>
+    fetchJson<SuburbSummary>(
+      `/property/suburb-metrics/${encodeURIComponent(suburb)}/${state}/summary`
+    ),
+
+  refreshSuburbData: (suburb: string, state: string, postcode: string) =>
+    fetchJson<{
+      suburb: string; state: string; sources_tried: string[];
+      metrics_fetched: number; metrics_stored: number; errors: string[];
+    }>(`/property/suburb-metrics/${encodeURIComponent(suburb)}/${state}/refresh?postcode=${postcode}`, {
+      method: 'POST',
+    }),
+
+  // Favorite suburbs
+  getFavoriteSuburbs: () =>
+    fetchJson<{ favorites: FavoriteSuburb[] }>('/property/favorite-suburbs'),
+
+  addFavoriteSuburb: (suburb: string, state: string, postcode: string) =>
+    fetchJson<{ id: number; suburb: string; state: string }>('/property/favorite-suburbs', {
+      method: 'POST',
+      body: JSON.stringify({ suburb, state, postcode }),
+    }),
+
+  removeFavoriteSuburb: (suburb: string, state: string) =>
+    fetchJson<{ status: string }>(
+      `/property/favorite-suburbs/${encodeURIComponent(suburb)}/${state}`,
+      { method: 'DELETE' },
+    ),
 };
 
 // Health check

@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useTradeStore } from '../store/tradeStore';
 import { useTrainingStore } from '../store/trainingStore';
 import { useAnalysisStore } from '../store/analysisStore';
+import { useSettingsStore } from '../store/settingsStore';
 import type { WSMessage, ProcessStatus, NeuralSignal, AnalysisReport } from '../services/types';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
@@ -27,6 +28,8 @@ export function useWebSocket() {
     setLatestReport,
   } = useAnalysisStore();
 
+  const wsToken = useSettingsStore((s) => s.settings?.ws_token);
+
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN ||
         wsRef.current?.readyState === WebSocket.CONNECTING) {
@@ -36,7 +39,8 @@ export function useWebSocket() {
     setStatus('connecting');
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const tokenParam = wsToken ? `?api_key=${encodeURIComponent(wsToken)}` : '';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws${tokenParam}`);
 
     ws.onopen = () => {
       setStatus('connected');
@@ -115,7 +119,7 @@ export function useWebSocket() {
     };
 
     wsRef.current = ws;
-  }, [setProcessStatus, addLog, setNeuralSignals, addTrainerLog, addAnalysisLog, setAnalysisRunning, setLatestReport]);
+  }, [setProcessStatus, addLog, setNeuralSignals, addTrainerLog, addAnalysisLog, setAnalysisRunning, setLatestReport, wsToken]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useBootstrap } from './hooks/useBootstrap';
 import { useSettingsStore } from './store/settingsStore';
 import { settingsApi } from './services/api';
 import { TrainingTab } from './components/training/TrainingTab';
@@ -7,6 +8,7 @@ import { ChartsTab } from './components/charts/ChartsTab';
 import { PredictionsTab } from './components/predictions/PredictionsTab';
 import { AnalysisTab } from './components/analysis/AnalysisTab';
 import { PortfolioTab } from './components/portfolio/PortfolioTab';
+import { PropertyTab } from './components/property/PropertyTab';
 import { Sidebar } from './components/common/Sidebar';
 import { SettingsModal } from './components/common/SettingsModal';
 
@@ -16,6 +18,7 @@ const TAB_LABELS: Record<string, string> = {
   charts: 'Charts',
   analysis: 'Analysis',
   portfolio: 'Portfolio',
+  property: 'Property',
 };
 
 const TAB_COMPONENTS: Record<string, React.FC> = {
@@ -24,10 +27,12 @@ const TAB_COMPONENTS: Record<string, React.FC> = {
   charts: ChartsTab,
   analysis: AnalysisTab,
   portfolio: PortfolioTab,
+  property: PropertyTab,
 };
 
 function App() {
   const { status } = useWebSocket();
+  useBootstrap();
   const { activeTab, setActiveTab, setSettings } = useSettingsStore();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -42,7 +47,7 @@ function App() {
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio')}
+        onTabChange={(tab) => setActiveTab(tab as 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio' | 'property')}
         connectionStatus={status}
         onSettingsClick={() => setShowSettings(true)}
       />

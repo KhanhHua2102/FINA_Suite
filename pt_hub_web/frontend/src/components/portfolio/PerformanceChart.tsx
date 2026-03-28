@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { Button } from '@heroui/button';
 import { createChart, IChartApi, ISeriesApi, LineData, Time, LineStyle } from 'lightweight-charts';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
@@ -72,7 +73,7 @@ export function PerformanceChart() {
   const portfolioSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const benchmarkSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
 
-  const [timeframe, setTimeframe] = useState<Timeframe>('1Y');
+  const [timeframe, setTimeframe] = useState<Timeframe>('3M');
   const [view, setView] = useState<ChartView>('performance');
   const [hoverData, setHoverData] = useState<{ date: string; portfolio?: number; benchmark?: number } | null>(null);
   const [showBenchmarkPicker, setShowBenchmarkPicker] = useState(false);
@@ -455,12 +456,11 @@ export function PerformanceChart() {
         </span>
         {view === 'performance' && (
           <div className="relative" ref={pickerRef}>
-            <button
+            <Button
+              variant="light"
+              size="sm"
               onClick={() => setShowBenchmarkPicker(!showBenchmarkPicker)}
-              className="flex items-center gap-1.5 px-2 py-1 -my-1 rounded-lg transition-colors cursor-pointer"
-              style={{ background: 'transparent' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#27272a'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              className="-my-1"
               title="Click to change benchmark"
             >
               <span
@@ -477,23 +477,23 @@ export function PerformanceChart() {
                   </svg>
                 </>
               )}
-            </button>
+            </Button>
             {showBenchmarkPicker && (
               <div className="absolute bottom-full left-0 mb-1 rounded-xl shadow-lg z-50 py-1 min-w-[220px]" style={{ background: '#18181b', border: '1px solid #27272a' }}>
                 {BENCHMARK_OPTIONS.map(opt => (
-                  <button
+                  <Button
                     key={opt.ticker}
+                    variant="light"
+                    size="sm"
                     onClick={() => handleBenchmarkChange(opt.ticker)}
-                    className="w-full text-left px-3 py-2 text-xs transition-colors"
+                    className="w-full justify-start"
                     style={{ color: opt.ticker === currentBenchmark ? '#006FEE' : '#ECEDEE', fontWeight: opt.ticker === currentBenchmark ? 600 : 400 }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#27272a'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
                     {opt.label}
                     {opt.ticker === currentBenchmark && (
                       <span className="ml-2" style={{ color: '#006FEE' }}>&#10003;</span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}

@@ -1,13 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@heroui/button';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useTrainingStore } from '../../store/trainingStore';
 import { useTradeStore } from '../../store/tradeStore';
 import { trainingApi } from '../../services/api';
+import { useTrainingStatus, trainingKeys } from '../../hooks/useTrainingData';
 
 export function TrainingControls() {
   const { settings } = useSettingsStore();
-  const { trainingStatus, setTrainingStatus, setRunningTrainers } = useTrainingStore();
+  const { trainingStatus, setRunningTrainers } = useTrainingStore();
   const { processStatus, setProcessStatus } = useTradeStore();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,11 +24,8 @@ export function TrainingControls() {
     );
   }, [trainers]);
 
-  useEffect(() => {
-    trainingApi.getStatus().then((data) => {
-      setTrainingStatus(data.status);
-    }).catch(() => {});
-  }, [setTrainingStatus]);
+  // Leverages React Query cache — if bootstrap already fetched, this is instant
+  useTrainingStatus();
 
   useEffect(() => {
     setRunningTrainers(runningTrainers);
@@ -102,8 +103,7 @@ export function TrainingControls() {
     setError(null);
     try {
       await trainingApi.clear();
-      const data = await trainingApi.getStatus();
-      setTrainingStatus(data.status);
+      await queryClient.invalidateQueries({ queryKey: trainingKeys.status });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear training');
     }
@@ -116,23 +116,23 @@ export function TrainingControls() {
         <h3 className="text-sm font-semibold" style={{ color: '#ECEDEE' }}>Training Controls</h3>
         <div className="flex items-center gap-2">
           {anyRunning && (
-            <button
+            <Button
+              color="danger"
+              size="sm"
               onClick={handleStopAll}
-              disabled={loading === 'stop-all'}
-              className="text-xs py-1 px-3 font-medium rounded-lg transition-colors disabled:opacity-50"
-              style={{ background: '#f31260', color: '#ECEDEE' }}
+              isDisabled={loading === 'stop-all'}
             >
               {loading === 'stop-all' ? 'Stopping...' : 'Stop All'}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            color="primary"
+            size="sm"
             onClick={handleTrainAll}
-            disabled={loading === 'train-all' || allRunning}
-            className="text-xs py-1 px-3 font-medium rounded-lg transition-colors disabled:opacity-50"
-            style={{ background: '#006FEE', color: '#ECEDEE' }}
+            isDisabled={loading === 'train-all' || allRunning}
           >
             {loading === 'train-all' ? 'Starting...' : 'Train All'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -155,23 +155,23 @@ export function TrainingControls() {
 
               <div className="flex gap-2">
                 {isRunning ? (
-                  <button
+                  <Button
+                    color="danger"
+                    size="sm"
                     onClick={() => handleStop(ticker)}
-                    disabled={isLoading}
-                    className="text-xs py-1 px-3 font-medium rounded-lg transition-colors disabled:opacity-50"
-                    style={{ background: '#f31260', color: '#ECEDEE' }}
+                    isDisabled={isLoading}
                   >
                     {isLoading ? 'Stopping...' : 'Stop'}
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    color="primary"
+                    size="sm"
                     onClick={() => handleTrain(ticker)}
-                    disabled={isLoading}
-                    className="text-xs py-1 px-3 font-medium rounded-lg transition-colors disabled:opacity-50"
-                    style={{ background: '#006FEE', color: '#ECEDEE' }}
+                    isDisabled={isLoading}
                   >
                     {isLoading ? 'Starting...' : 'Train'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -179,14 +179,15 @@ export function TrainingControls() {
         })}
       </div>
 
-      <button
+      <Button
+        variant="flat"
+        size="sm"
         onClick={handleClear}
-        disabled={loading === 'clear'}
-        className="w-full text-sm py-2 px-4 font-medium rounded-lg transition-colors disabled:opacity-50"
-        style={{ background: '#27272a', color: '#a1a1aa' }}
+        isDisabled={loading === 'clear'}
+        className="w-full"
       >
         {loading === 'clear' ? 'Clearing...' : 'Clear All Training'}
-      </button>
+      </Button>
 
       {error && <div className="mt-3 text-xs" style={{ color: '#f31260' }}>{error}</div>}
 
@@ -210,6 +211,12 @@ function StatusBadge({ status }: { status: string }) {
       border: 'rgba(245, 165, 36, 0.25)',
       color: '#f5a524',
       label: 'Training',
+    },
+    PARTIAL: {
+      bg: 'rgba(245, 165, 36, 0.1)',
+      border: 'rgba(245, 165, 36, 0.25)',
+      color: '#f5a524',
+      label: 'Partial',
     },
     NOT_TRAINED: {
       bg: '#27272a',

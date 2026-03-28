@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Button } from '@heroui/button';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { usePortfolioDashboard } from '../../hooks/usePortfolioDashboard';
 import { PerformanceChart } from './PerformanceChart';
@@ -651,19 +652,18 @@ export function PortfolioDashboard() {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <p className="text-xs uppercase tracking-wider" style={{ color: '#a1a1aa' }}>Total Investments</p>
-              <button
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                isDisabled={rebuilding}
                 onClick={handleRebuild}
-                disabled={rebuilding}
                 title="Rebuild chart snapshots"
-                className="transition-colors disabled:opacity-50"
-                style={{ color: '#a1a1aa' }}
-                onMouseEnter={e => { (e.target as HTMLElement).style.color = '#006FEE'; }}
-                onMouseLeave={e => { (e.target as HTMLElement).style.color = '#a1a1aa'; }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={rebuilding ? 'animate-spin' : ''}>
                   <path d="M21 2v6h-6M3 12a9 9 0 0115.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 01-15.36 6.36L3 16" />
                 </svg>
-              </button>
+              </Button>
             </div>
             <div className="rounded-full p-0.5 flex" style={{ background: '#27272a' }}>
               <button
@@ -1050,8 +1050,15 @@ export function PortfolioDashboard() {
                           {label}
                         </span>
                       </div>
+                      {ev.est_amount != null && (
+                        <div className="mt-0.5">
+                          <span className="text-[11px] font-semibold" style={{ color: '#22c55e' }}>
+                            ~${ev.est_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} est.
+                          </span>
+                        </div>
+                      )}
                       {ev.detail && (
-                        <p className="text-[11px] mt-0.5 truncate" style={{ color: '#71717a' }}>{ev.detail}</p>
+                        <p className="text-[11px] truncate mt-0.5" style={{ color: '#71717a' }}>{ev.detail}</p>
                       )}
                       {ev.type === 'distribution' && (ev.ex_date || ev.record_date || ev.payment_date) && (
                         <div className="flex gap-3 mt-1 text-[10px] font-mono" style={{ color: '#71717a' }}>

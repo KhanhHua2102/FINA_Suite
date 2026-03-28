@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
+import { Select, SelectItem } from '@heroui/select';
+import { Button } from '@heroui/button';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { useAnalysisStore } from '../../store/analysisStore';
 import { usePortfolioAnalysisStore } from '../../store/portfolioAnalysisStore';
@@ -195,45 +197,48 @@ export function PortfolioAnalysisView() {
     <div className="flex-1 overflow-auto p-4 space-y-5 max-w-6xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
-        <label className="text-xs font-semibold uppercase" style={{ color: '#a1a1aa' }}>Portfolio</label>
-        <select
-          value={selectedId ?? ''}
-          onChange={e => { selectPortfolio(Number(e.target.value)); reset(); }}
-          className="glass-input py-1.5 px-3 rounded-lg text-sm"
-          style={{ color: '#ECEDEE', background: '#18181b', border: '1px solid #27272a' }}
+        <Select
+          aria-label="Portfolio"
+          placeholder="Select portfolio..."
+          items={portfolios.map(p => ({ key: String(p.id), label: `${p.name} (${p.currency})` }))}
+          selectedKeys={selectedId != null ? new Set([String(selectedId)]) : new Set([])}
+          onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) { selectPortfolio(Number(v)); reset(); } }}
+          variant="bordered"
+          size="sm"
+          classNames={{ base: 'max-w-56' }}
         >
-          <option value="">Select portfolio...</option>
-          {portfolios.map(p => (
-            <option key={p.id} value={p.id}>{p.name} ({p.currency})</option>
-          ))}
-        </select>
+          {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+        </Select>
 
         {selectedId && activeHoldings.length > 0 && !isRunning && (
           <>
-            <button
+            <Button
+              color="primary"
+              size="sm"
               onClick={handleAnalyze}
-              disabled={selectedTickers.size === 0}
-              className="btn btn-primary px-4 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+              isDisabled={selectedTickers.size === 0}
             >
               Analyze ({selectedTickers.size} selected)
-            </button>
+            </Button>
             {hasResults && (
-              <button
+              <Button
+                variant="flat"
+                size="sm"
                 onClick={reset}
-                className="btn btn-secondary px-3 py-2 text-sm"
               >
                 Clear
-              </button>
+              </Button>
             )}
           </>
         )}
         {isRunning && (
-          <button
+          <Button
+            color="danger"
+            size="sm"
             onClick={cancel}
-            className="btn btn-danger px-4 py-2 text-sm font-medium"
           >
             Cancel
-          </button>
+          </Button>
         )}
       </div>
 
@@ -242,13 +247,14 @@ export function PortfolioAnalysisView() {
         <div className="rounded-xl overflow-hidden" style={{ background: '#18181b', border: '1px solid #27272a' }}>
           <div className="px-4 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
             <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#a1a1aa' }}>Select Holdings to Analyze</h3>
-            <button
+            <Button
+              variant="light"
+              color="primary"
+              size="sm"
               onClick={toggleAll}
-              className="text-xs transition-colors hover:opacity-80"
-              style={{ color: '#006FEE' }}
             >
               {selectedTickers.size === activeHoldings.length ? 'Deselect All' : 'Select All'}
-            </button>
+            </Button>
           </div>
           <div>
             {activeHoldings.map((h, idx) => (
@@ -370,12 +376,13 @@ export function PortfolioAnalysisView() {
 
           {/* Show/Hide Logs */}
           <div className="flex items-center gap-3 pt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.15)' }}>
-            <button
+            <Button
+              variant="flat"
+              size="sm"
               onClick={() => setShowLogs(!showLogs)}
-              className="btn btn-secondary px-3 py-1.5 text-xs"
             >
               {showLogs ? 'Hide Logs' : 'Show Logs'}
-            </button>
+            </Button>
             {currentTicker && (
               <span className="text-xs" style={{ color: '#a1a1aa' }}>
                 Live output from {displayTicker(currentTicker)}

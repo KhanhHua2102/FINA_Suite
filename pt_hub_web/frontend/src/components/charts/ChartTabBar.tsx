@@ -1,3 +1,4 @@
+import { Select, SelectItem } from '@heroui/select';
 import { useSettingsStore, selectTimeframes } from '../../store/settingsStore';
 import { DraggableTickerBar } from '../common/DraggableTickerBar';
 
@@ -9,18 +10,18 @@ export function ChartTabBar() {
 
   return (
     <DraggableTickerBar selectedTicker={chartTicker} onSelect={setChartTicker}>
-      <select
-        value={chartTimeframe}
-        onChange={(e) => setChartTimeframe(e.target.value)}
-        className="glass-input text-xs py-1.5 px-3"
-        style={{ borderRadius: '8px' }}
+      <Select
+        aria-label="Timeframe"
+        selectedKeys={new Set([chartTimeframe])}
+        onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setChartTimeframe(v); }}
+        variant="bordered"
+        size="sm"
+        classNames={{ base: 'max-w-28' }}
       >
         {timeframes.map((tf) => (
-          <option key={tf} value={tf}>
-            {tf}
-          </option>
+          <SelectItem key={tf}>{tf}</SelectItem>
         ))}
-      </select>
+      </Select>
     </DraggableTickerBar>
   );
 }

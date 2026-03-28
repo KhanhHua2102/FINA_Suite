@@ -1,26 +1,16 @@
-import { useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useTrainingStore } from '../../store/trainingStore';
-import { trainingApi } from '../../services/api';
+import { useNeuralSignals } from '../../hooks/useTrainingData';
 import { NeuralTile } from './NeuralTile';
 
 export function NeuralSignals() {
   const { settings, setChartTicker, setActiveTab } = useSettingsStore();
-  const { neuralSignals, setAllNeuralSignals } = useTrainingStore();
+  const { neuralSignals } = useTrainingStore();
 
   const tickers = settings?.tickers ?? [];
 
-  useEffect(() => {
-    const fetchSignals = () => {
-      trainingApi.getNeuralSignals().then((data) => {
-        setAllNeuralSignals(data.signals);
-      }).catch(() => {});
-    };
-
-    fetchSignals();
-    const interval = setInterval(fetchSignals, 5000);
-    return () => clearInterval(interval);
-  }, [setAllNeuralSignals]);
+  // React Query handles 5s polling + deduplication with bootstrap prefetch
+  useNeuralSignals();
 
   const handleTileClick = (ticker: string) => {
     setChartTicker(ticker);

@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Checkbox } from '@heroui/checkbox';
+import { Select, SelectItem } from '@heroui/select';
 import { useSettingsStore, selectTickers } from '../../store/settingsStore';
 import { portfolioApi } from '../../services/api';
 import type { PortfolioOptimizationResult, RebalanceResult, CorrelationResult } from '../../services/types';
@@ -174,12 +178,11 @@ export function OptimizeView() {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#27272a'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = selectedTickers.includes(ticker) ? '#27272a' : ''; }}
                 >
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: '#006FEE' }}
-                    checked={selectedTickers.includes(ticker)}
-                    onChange={() => toggleTicker(ticker)}
+                  <Checkbox
+                    isSelected={selectedTickers.includes(ticker)}
+                    onValueChange={() => toggleTicker(ticker)}
+                    color="primary"
+                    size="sm"
                   />
                   <span className="font-medium" style={{ color: selectedTickers.includes(ticker) ? '#ECEDEE' : '#a1a1aa' }}>
                     {dt(ticker)}
@@ -190,30 +193,22 @@ export function OptimizeView() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: '#a1a1aa' }}>Strategy</label>
-            <select
-              value={strategy}
-              onChange={e => setStrategy(e.target.value as Strategy)}
-              className="w-full py-2 px-3 rounded-xl"
-              style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-              onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+            <Select
+              label="Strategy"
+              labelPlacement="outside"
+              selectedKeys={new Set([strategy])}
+              onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setStrategy(v as Strategy); }}
+              variant="bordered"
+              size="sm"
             >
-              <option value="mean-variance">Mean-Variance (Min Volatility)</option>
-              <option value="equal-weight">Equal Weight</option>
-            </select>
+              <SelectItem key="mean-variance">Mean-Variance (Min Volatility)</SelectItem>
+              <SelectItem key="equal-weight">Equal Weight</SelectItem>
+            </Select>
           </div>
 
-          <button
-            onClick={handleOptimize}
-            disabled={loading || selectedTickers.length < 2}
-            className="w-full py-3 px-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white"
-            style={{ background: '#006FEE' }}
-            onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = '#338ef7'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-          >
+          <Button color="primary" size="md" radius="lg" className="w-full" isDisabled={loading || selectedTickers.length < 2} onClick={handleOptimize}>
             {loading ? 'Optimizing...' : 'Optimize Portfolio'}
-          </button>
+          </Button>
           {error && <p className="text-sm mt-2" style={{ color: '#f31260' }}>{error}</p>}
         </div>
 
@@ -380,46 +375,34 @@ export function OptimizeView() {
                     <tr key={dt(h.ticker)} className="last:border-0" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)' }}>
                       <td className="px-6 py-3"><span className="font-bold" style={{ color: '#ECEDEE' }}>{dt(h.ticker)}</span></td>
                       <td className="px-6 py-3">
-                        <button
-                          onClick={() => toggleHoldingMode(i)}
-                          className="text-xs px-2 py-1 rounded-lg transition-colors"
-                          style={{ border: '1px solid #27272a', color: '#a1a1aa' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ECEDEE'; (e.currentTarget as HTMLElement).style.borderColor = '#006FEE'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#a1a1aa'; (e.currentTarget as HTMLElement).style.borderColor = '#27272a'; }}
-                        >
+                        <Button variant="light" size="sm" onClick={() => toggleHoldingMode(i)}>
                           {h.mode === 'qty-price' ? 'Qty + Price' : 'Value Only'}
-                        </button>
+                        </Button>
                       </td>
                       <td className="px-6 py-3 text-right">
                         {h.mode === 'qty-price' ? (
-                          <input type="number" min="0" step="any" placeholder="0" value={h.quantity}
-                            onChange={e => updateHolding(i, 'quantity', e.target.value)}
-                            className="w-28 px-3 py-1.5 rounded-xl text-right font-mono text-sm"
-                            style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                            onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                            onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                          <Input type="number" min={0} step="any" placeholder="0" value={h.quantity}
+                            onValueChange={v => updateHolding(i, 'quantity', v)}
+                            variant="bordered" size="sm"
+                            classNames={{ base: 'w-28', input: 'text-right font-mono' }}
                           />
                         ) : <span className="text-sm" style={{ color: '#a1a1aa' }}>--</span>}
                       </td>
                       <td className="px-6 py-3 text-right">
                         {h.mode === 'qty-price' ? (
-                          <input type="number" min="0" step="any" placeholder="auto" value={h.price}
-                            onChange={e => updateHolding(i, 'price', e.target.value)}
-                            className="w-28 px-3 py-1.5 rounded-xl text-right font-mono text-sm"
-                            style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                            onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                            onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                          <Input type="number" min={0} step="any" placeholder="auto" value={h.price}
+                            onValueChange={v => updateHolding(i, 'price', v)}
+                            variant="bordered" size="sm"
+                            classNames={{ base: 'w-28', input: 'text-right font-mono' }}
                           />
                         ) : <span className="text-sm" style={{ color: '#a1a1aa' }}>--</span>}
                       </td>
                       <td className="px-6 py-3 text-right">
                         {h.mode === 'value' ? (
-                          <input type="number" min="0" step="any" placeholder="0" value={h.value}
-                            onChange={e => updateHolding(i, 'value', e.target.value)}
-                            className="w-32 px-3 py-1.5 rounded-xl text-right font-mono text-sm"
-                            style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                            onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                            onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                          <Input type="number" min={0} step="any" placeholder="0" value={h.value}
+                            onValueChange={v => updateHolding(i, 'value', v)}
+                            variant="bordered" size="sm"
+                            classNames={{ base: 'w-32', input: 'text-right font-mono' }}
                           />
                         ) : (
                           <span className="font-mono text-sm" style={{ color: '#ECEDEE' }}>
@@ -446,41 +429,38 @@ export function OptimizeView() {
 
           <div className="flex flex-wrap items-end gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: '#a1a1aa' }}>Rebalance Mode</label>
-              <select
-                value={rebalanceStrategy}
-                onChange={e => setRebalanceStrategy(e.target.value as RebalanceStrategy)}
-                className="py-2 px-3 rounded-xl"
-                style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+              <Select
+                label="Rebalance Mode"
+                labelPlacement="outside"
+                selectedKeys={new Set([rebalanceStrategy])}
+                onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setRebalanceStrategy(v as RebalanceStrategy); }}
+                variant="bordered"
+                size="sm"
               >
-                <option value="rebalance">Full Rebalance (Buy + Sell)</option>
-                <option value="buy-only">Buy Only (New Capital)</option>
-              </select>
+                <SelectItem key="rebalance">Full Rebalance (Buy + Sell)</SelectItem>
+                <SelectItem key="buy-only">Buy Only (New Capital)</SelectItem>
+              </Select>
             </div>
             {rebalanceStrategy === 'buy-only' && (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: '#a1a1aa' }}>Additional Capital ($)</label>
-                <input type="number" min="0" step="any" placeholder="10000" value={additionalCapital}
-                  onChange={e => setAdditionalCapital(e.target.value)}
-                  className="w-40 py-2 px-3 rounded-xl font-mono"
-                  style={{ background: '#27272a', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                <Input
+                  label="Additional Capital ($)"
+                  labelPlacement="outside"
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="10000"
+                  value={additionalCapital}
+                  onValueChange={setAdditionalCapital}
+                  variant="bordered"
+                  size="sm"
+                  classNames={{ base: 'w-40', input: 'font-mono' }}
                 />
               </div>
             )}
-            <button
-              onClick={handleRebalance}
-              disabled={rebalanceLoading}
-              className="py-2.5 px-6 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all text-white"
-              style={{ background: '#006FEE' }}
-              onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = '#338ef7'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-            >
+            <Button color="primary" size="md" radius="lg" isDisabled={rebalanceLoading} onClick={handleRebalance}>
               {rebalanceLoading ? 'Calculating...' : 'Calculate Rebalance'}
-            </button>
+            </Button>
           </div>
 
           {rebalanceError && <p className="text-sm" style={{ color: '#f31260' }}>{rebalanceError}</p>}

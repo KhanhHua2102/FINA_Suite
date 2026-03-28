@@ -161,6 +161,14 @@ export function AnalysisReportCard({ report }: { report: AnalysisReport }) {
           >
             {report.decision}
           </span>
+          {report.strategy && report.strategy !== 'default' && (
+            <span
+              className="px-3 py-1 rounded-lg text-xs font-medium"
+              style={{ background: '#27272a', color: '#a1a1aa', border: '1px solid #3f3f46' }}
+            >
+              {report.strategy.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            </span>
+          )}
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <span className="text-sm" style={{ color: '#a1a1aa' }}>Confidence</span>

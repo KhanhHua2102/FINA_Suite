@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Checkbox } from '@heroui/checkbox';
+import { Select, SelectItem } from '@heroui/select';
 import { usePortfolioStore } from '../../store/portfolioStore';
 import { TickerAvatar } from '../common/TickerAvatar';
 
@@ -124,10 +128,6 @@ export function TransactionsView() {
   const startIdx = txnPage * pageSize;
   const endIdx = Math.min(startIdx + filteredTxns.length, txnTotal);
 
-  const inputStyle: React.CSSProperties = {
-    background: '#09090b', border: '1px solid #27272a', color: '#ECEDEE', outline: 'none',
-  };
-
   return (
     <div className="space-y-4">
       {/* Header: title + action buttons (matching "Recent activity" header) */}
@@ -138,28 +138,22 @@ export function TransactionsView() {
         <div className="flex items-center gap-2">
           {selectMode ? (
             <>
-              <button
-                onClick={handleBatchDelete}
-                disabled={selected.size === 0 || deleting}
-                className="px-4 py-2 text-xs font-semibold rounded-xl transition-all disabled:opacity-40 text-white"
-                style={{ background: '#f31260' }}
-              >
+              <Button color="danger" size="sm" radius="lg" isDisabled={selected.size === 0 || deleting} onClick={handleBatchDelete}>
                 {deleting ? 'Deleting...' : `Delete (${selected.size})`}
-              </button>
-              <button onClick={exitSelectMode} className="px-4 py-2 text-xs font-semibold rounded-xl" style={{ background: '#27272a', color: '#a1a1aa' }}>
+              </Button>
+              <Button variant="flat" size="sm" radius="lg" onClick={exitSelectMode}>
                 Cancel
-              </button>
+              </Button>
             </>
           ) : (
             <>
               {/* Filter button */}
               <div className="relative">
-                <button
+                <Button
+                  variant="flat"
+                  size="sm"
+                  radius="lg"
                   onClick={() => { setShowFilterMenu(!showFilterMenu); setShowSortMenu(false); }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors"
-                  style={{ background: '#27272a', color: '#ECEDEE' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#3f3f46'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#27272a'; }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" />
@@ -168,7 +162,7 @@ export function TransactionsView() {
                   {filterType && (
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#006FEE' }} />
                   )}
-                </button>
+                </Button>
                 {showFilterMenu && (
                   <div
                     className="absolute right-0 top-full mt-1.5 rounded-xl p-1 z-20 min-w-[140px] shadow-xl"
@@ -177,34 +171,34 @@ export function TransactionsView() {
                     {['BUY', 'SELL', 'DIVIDEND', 'SPLIT'].map(t => {
                       const tc = TYPE_CONFIG[t];
                       return (
-                        <button
+                        <Button
                           key={t}
+                          variant="light"
+                          size="sm"
                           onClick={() => { setFilterType(filterType === t ? null : t); setShowFilterMenu(false); }}
-                          className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2"
+                          className="w-full justify-start gap-2"
                           style={{
                             background: filterType === t ? 'rgba(0,111,238,0.10)' : 'transparent',
                             color: filterType === t ? '#006FEE' : '#a1a1aa',
                           }}
-                          onMouseEnter={e => { if (filterType !== t) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                          onMouseLeave={e => { if (filterType !== t) e.currentTarget.style.background = filterType === t ? 'rgba(0,111,238,0.10)' : 'transparent'; }}
                         >
                           <span style={{ color: tc?.color }}>{tc?.icon}</span>
                           {tc?.label}
-                        </button>
+                        </Button>
                       );
                     })}
                     {filterType && (
                       <>
                         <div style={{ borderTop: '1px solid #27272a', margin: '4px 0' }} />
-                        <button
+                        <Button
+                          variant="light"
+                          size="sm"
                           onClick={() => { setFilterType(null); setShowFilterMenu(false); }}
-                          className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors"
+                          className="w-full justify-start"
                           style={{ color: '#71717a' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                         >
                           Clear filter
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>
@@ -212,56 +206,49 @@ export function TransactionsView() {
               </div>
               {/* Sort button */}
               <div className="relative">
-                <button
+                <Button
+                  variant="flat"
+                  size="sm"
+                  radius="lg"
                   onClick={() => { setShowSortMenu(!showSortMenu); setShowFilterMenu(false); }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors"
-                  style={{ background: '#27272a', color: '#ECEDEE' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#3f3f46'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#27272a'; }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <path d="M3 6h18M3 12h12M3 18h6" />
                   </svg>
                   Sort
-                </button>
+                </Button>
                 {showSortMenu && (
                   <div
                     className="absolute right-0 top-full mt-1.5 rounded-xl p-1 z-20 min-w-[140px] shadow-xl"
                     style={{ background: '#18181b', border: '1px solid #27272a' }}
                   >
                     {([['date', 'Date'], ['ticker', 'Asset'], ['type', 'Type'], ['total', 'Value']] as const).map(([field, label]) => (
-                      <button
+                      <Button
                         key={field}
+                        variant="light"
+                        size="sm"
                         onClick={() => {
                           if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
                           else { setSortField(field); setSortDir('desc'); }
                           setShowSortMenu(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center justify-between"
+                        className="w-full justify-between"
                         style={{
                           background: sortField === field ? 'rgba(0,111,238,0.10)' : 'transparent',
                           color: sortField === field ? '#006FEE' : '#a1a1aa',
                         }}
-                        onMouseEnter={e => { if (sortField !== field) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                        onMouseLeave={e => { if (sortField !== field) e.currentTarget.style.background = sortField === field ? 'rgba(0,111,238,0.10)' : 'transparent'; }}
                       >
                         {label}
                         {sortField === field && <span className="text-xs">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
               </div>
               {/* Add button */}
-              <button
-                onClick={() => setShowAdd(!showAdd)}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl transition-all text-white"
-                style={{ background: '#006FEE' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-              >
+              <Button color="primary" size="sm" radius="lg" onClick={() => setShowAdd(!showAdd)}>
                 {showAdd ? 'Cancel' : '+ Add'}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -279,60 +266,52 @@ export function TransactionsView() {
               { label: 'Fees ($)', key: 'fees', type: 'number', placeholder: '9.95', mono: true },
             ].map(f => (
               <div key={f.key}>
-                <label className="text-[11px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: '#71717a' }}>{f.label}</label>
-                <input
+                <Input
+                  label={f.label}
+                  labelPlacement="outside"
                   type={f.type}
                   step={f.type === 'number' ? 'any' : undefined}
                   value={(form as Record<string, string>)[f.key]}
-                  onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  onValueChange={v => setForm(prev => ({ ...prev, [f.key]: v }))}
                   placeholder={f.placeholder}
-                  className={`w-full px-3 py-2 rounded-xl text-sm transition-colors ${f.mono ? 'font-mono' : ''}`}
-                  style={inputStyle}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                  variant="bordered"
+                  size="sm"
+                  classNames={f.mono ? { input: 'font-mono' } : undefined}
                 />
               </div>
             ))}
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: '#71717a' }}>Type *</label>
-              <select
-                value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                className="w-full px-3 py-2 rounded-xl text-sm transition-colors"
-                style={inputStyle}
-                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+              <Select
+                label="Type *"
+                labelPlacement="outside"
+                selectedKeys={new Set([form.type])}
+                onSelectionChange={keys => { const v = Array.from(keys)[0] as string; if (v) setForm(f => ({ ...f, type: v })); }}
+                variant="bordered"
+                size="sm"
               >
-                <option value="BUY">Buy</option>
-                <option value="SELL">Sell</option>
-                <option value="DIVIDEND">Dividend</option>
-                <option value="SPLIT">Split</option>
-              </select>
+                <SelectItem key="BUY">Buy</SelectItem>
+                <SelectItem key="SELL">Sell</SelectItem>
+                <SelectItem key="DIVIDEND">Dividend</SelectItem>
+                <SelectItem key="SPLIT">Split</SelectItem>
+              </Select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-[11px] font-medium uppercase tracking-wider block mb-1.5" style={{ color: '#71717a' }}>Notes</label>
-              <input
+              <Input
+                label="Notes"
+                labelPlacement="outside"
                 type="text"
                 value={form.notes}
-                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                onValueChange={v => setForm(f => ({ ...f, notes: v }))}
                 placeholder="Optional notes"
-                className="w-full px-3 py-2 rounded-xl text-sm transition-colors"
-                style={inputStyle}
-                onFocus={e => { e.currentTarget.style.borderColor = '#006FEE'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#27272a'; }}
+                variant="bordered"
+                size="sm"
               />
             </div>
           </div>
           {addError && <p className="text-xs mt-2" style={{ color: '#f31260' }}>{addError}</p>}
-          <button
-            onClick={handleAdd}
-            className="mt-4 px-5 py-2 text-sm font-semibold rounded-xl transition-all text-white"
-            style={{ background: '#006FEE' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#338ef7'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#006FEE'; }}
-          >
+          <Button color="primary" size="md" radius="lg" className="mt-4" onClick={handleAdd}>
             Add Transaction
-          </button>
+          </Button>
         </div>
       )}
 
@@ -355,15 +334,14 @@ export function TransactionsView() {
                   <tr style={{ background: '#18181b' }}>
                     {selectMode && (
                       <th className="px-5 py-3 w-10" style={{ borderBottom: '1px solid #27272a' }}>
-                        <input
-                          type="checkbox"
-                          checked={filteredTxns.length > 0 && selected.size === filteredTxns.length}
-                          onChange={() => {
+                        <Checkbox
+                          isSelected={filteredTxns.length > 0 && selected.size === filteredTxns.length}
+                          onValueChange={() => {
                             if (selected.size === filteredTxns.length) setSelected(new Set());
                             else setSelected(new Set(filteredTxns.map(t => t.id)));
                           }}
-                          className="w-4 h-4 rounded cursor-pointer"
-                          style={{ accentColor: '#006FEE' }}
+                          color="primary"
+                          size="sm"
                         />
                       </th>
                     )}
@@ -395,12 +373,11 @@ export function TransactionsView() {
                       >
                         {selectMode && (
                           <td className="px-5 py-4 w-10" onClick={e => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              checked={selected.has(txn.id)}
-                              onChange={() => toggleSelect(txn.id)}
-                              className="w-4 h-4 rounded cursor-pointer"
-                              style={{ accentColor: '#006FEE' }}
+                            <Checkbox
+                              isSelected={selected.has(txn.id)}
+                              onValueChange={() => toggleSelect(txn.id)}
+                              color="primary"
+                              size="sm"
                             />
                           </td>
                         )}
@@ -431,18 +408,18 @@ export function TransactionsView() {
                         </td>
                         {!selectMode && (
                           <td className="px-3 py-4 w-10">
-                            <button
+                            <Button
+                              isIconOnly
+                              variant="light"
+                              size="sm"
                               onClick={() => handleDelete(txn.id)}
-                              className="p-1.5 rounded-lg transition-all"
-                              style={{ color: '#3f3f46' }}
-                              onMouseEnter={e => { e.currentTarget.style.color = '#f31260'; e.currentTarget.style.background = 'rgba(243,18,96,0.1)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.color = '#3f3f46'; e.currentTarget.style.background = ''; }}
                               title="Delete"
+                              style={{ color: '#3f3f46' }}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
                               </svg>
-                            </button>
+                            </Button>
                           </td>
                         )}
                       </tr>
@@ -459,28 +436,24 @@ export function TransactionsView() {
               </p>
               {totalPages > 1 && (
                 <div className="flex items-center gap-1">
-                  <button
+                  <Button
+                    variant="light"
+                    size="sm"
+                    isDisabled={txnPage === 0}
                     onClick={() => selectedId && fetchTransactions(selectedId, txnPage - 1)}
-                    disabled={txnPage === 0}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all disabled:opacity-30"
-                    style={{ color: '#a1a1aa' }}
-                    onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
                     Previous
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="light"
+                    size="sm"
+                    isDisabled={txnPage >= totalPages - 1}
                     onClick={() => selectedId && fetchTransactions(selectedId, txnPage + 1)}
-                    disabled={txnPage >= totalPages - 1}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all disabled:opacity-30"
-                    style={{ color: '#a1a1aa' }}
-                    onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}
                   >
                     Next
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

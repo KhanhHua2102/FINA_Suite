@@ -238,7 +238,7 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str = Query(...
     except Exception as exc:
         import logging
         logging.getLogger(__name__).exception("refresh_suburb_data failed")
-        raise HTTPException(status_code=500, detail="Failed to refresh suburb data") from exc
+        raise HTTPException(status_code=500, detail="Failed to refresh suburb data") from None
 
 
 # ── Favorite Suburbs ──────────────────────────────────────────

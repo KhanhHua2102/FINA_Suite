@@ -419,6 +419,7 @@ export type WSEventType =
   | 'training_status'
   | 'analysis_log'
   | 'analysis_complete'
+  | 'analysis_cancelled'
   | 'pong';
 
 export interface WSMessage {

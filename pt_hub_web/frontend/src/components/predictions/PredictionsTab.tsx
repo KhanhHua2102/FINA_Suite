@@ -28,6 +28,7 @@ export function PredictionsTab() {
     if (!data?.signals) return null;
     let totalLong = 0, totalShort = 0;
     for (const tf of Object.values(data.signals)) {
+      if (tf.trained === false) continue;
       totalLong += tf.long;
       totalShort += tf.short;
     }
@@ -68,10 +69,13 @@ export function PredictionsTab() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {timeframes.map((tf) => {
                 const sig = data.signals[tf];
-                if (!sig) return (
+                if (!sig || sig.trained === false) return (
                   <div key={tf} className="bg-[#18181b] rounded-xl border border-[#27272a] p-5">
-                    <h3 className="text-sm font-medium mb-3 text-[#a1a1aa]">{tf.toUpperCase()}</h3>
-                    <div className="text-sm text-[#71717a]">No data yet — run training first</div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-medium text-[#a1a1aa]">{tf.toUpperCase()}</h3>
+                      <span className="text-sm font-bold text-[#71717a]">N/A</span>
+                    </div>
+                    <div className="text-sm text-[#71717a]">Not trained yet</div>
                   </div>
                 );
 

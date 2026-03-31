@@ -31,9 +31,28 @@ async def get_predictions(ticker: str):
     high_bounds = signals_row.get("high_bound_prices", []) if signals_row else []
     low_bounds = signals_row.get("low_bound_prices", []) if signals_row else []
 
+    # Check which timeframes actually have trained weights
+    trained_tfs = set()
+    for tf in settings.timeframes:
+        mem = runtime_db.get_memory(safe, tf)
+        if mem and mem.get("weights_high"):
+            trained_tfs.add(tf)
+
     for i, tf in enumerate(settings.timeframes):
         high_bound = high_bounds[i] if i < len(high_bounds) else 0.0
         low_bound = low_bounds[i] if i < len(low_bounds) else 0.0
+
+        # Mark untrained timeframes (sentinel values from pt_thinker)
+        trained = tf in trained_tfs
+        if not trained:
+            signals[tf] = {
+                "long": 0,
+                "short": 0,
+                "high_bound": 0.0,
+                "low_bound": 0.0,
+                "trained": False,
+            }
+            continue
 
         # Derive per-timeframe signal from bound prices vs current price
         # (mirrors pt_thinker logic: price < low_bound → long, price > high_bound → short)
@@ -50,6 +69,7 @@ async def get_predictions(ticker: str):
             "short": tf_short,
             "high_bound": high_bound,
             "low_bound": low_bound,
+            "trained": True,
         }
 
     return {

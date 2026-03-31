@@ -124,6 +124,18 @@ class ProcessManager:
         # Lazy import to avoid circular dependency
         from app.services.file_watcher import file_watcher
 
+        # Clean up stale TRAINING state if the trainer didn't write FINISHED itself
+        safe = ticker.replace("^", "").replace(".", "_")
+        row = runtime_db.get_trainer(safe)
+        if row and row.get("state") == "TRAINING":
+            has_weights = False
+            for tf in settings.timeframes:
+                mem = runtime_db.get_memory(safe, tf)
+                if mem and mem.get("weights_high"):
+                    has_weights = True
+                    break
+            runtime_db.upsert_trainer(safe, state="FINISHED" if has_weights else "NOT_TRAINED")
+
         self._broadcast_status()
         self._broadcast_log("trainer", f"Training finished for {ticker}", ticker)
 
@@ -263,18 +275,34 @@ class ProcessManager:
 
     def stop_trainer(self, ticker: str) -> bool:
         """Stop trainer for a specific ticker."""
-        if ticker not in self.trainers or not self.trainers[ticker].running:
+        info = self.trainers.get(ticker)
+        if info is None:
             return False
 
-        try:
-            self.trainers[ticker].process.terminate()
-            self.trainers[ticker].process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            self.trainers[ticker].process.kill()
-        except Exception:
-            pass
+        if info.running:
+            try:
+                info.process.terminate()
+                info.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                info.process.kill()
+            except Exception:
+                pass
 
-        del self.trainers[ticker]
+        # Always clean up — even if the process already exited
+        self.trainers.pop(ticker, None)
+
+        # Update DB state so it doesn't stay stuck on TRAINING
+        safe = ticker.replace("^", "").replace(".", "_")
+        row = runtime_db.get_trainer(safe)
+        if row and row.get("state") == "TRAINING":
+            has_weights = False
+            for tf in settings.timeframes:
+                mem = runtime_db.get_memory(safe, tf)
+                if mem and mem.get("weights_high"):
+                    has_weights = True
+                    break
+            runtime_db.upsert_trainer(safe, state="FINISHED" if has_weights else "NOT_TRAINED")
+
         self._broadcast_status()
         return True
 
@@ -308,6 +336,11 @@ class ProcessManager:
 
     def get_status(self) -> dict:
         """Get status of all processes."""
+        # Clean up finished trainers so stale entries don't confuse the frontend
+        finished = [t for t, info in self.trainers.items() if not info.running]
+        for t in finished:
+            del self.trainers[t]
+
         return {
             "neural": {
                 "running": self.neural.running,

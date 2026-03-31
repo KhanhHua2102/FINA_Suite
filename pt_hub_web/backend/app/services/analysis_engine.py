@@ -837,6 +837,9 @@ class AnalysisEngine:
         self._current_ticker: Optional[str] = None
         self._log_callbacks: List[Callable] = []
         self._complete_callbacks: List[Callable] = []
+        self._cancel_callbacks: List[Callable] = []
+        self._cancel_event: asyncio.Event = asyncio.Event()
+        self._current_task: Optional[asyncio.Task] = None
         self._db: Optional[AnalysisDB] = None
 
     def _get_db(self) -> AnalysisDB:
@@ -857,6 +860,27 @@ class AnalysisEngine:
 
     def register_complete_callback(self, cb: Callable):
         self._complete_callbacks.append(cb)
+
+    def register_cancel_callback(self, cb: Callable):
+        self._cancel_callbacks.append(cb)
+
+    def _check_cancelled(self):
+        if self._cancel_event.is_set():
+            raise asyncio.CancelledError("Analysis cancelled by user")
+
+    async def cancel(self):
+        if not self._running:
+            return
+        self._cancel_event.set()
+        if self._current_task and not self._current_task.done():
+            self._current_task.cancel()
+
+    def _on_cancelled(self, ticker: str):
+        for cb in self._cancel_callbacks:
+            try:
+                cb(ticker)
+            except Exception:
+                pass
 
     def _log(self, message: str):
         logger.info(f"[Analysis] {message}")
@@ -879,11 +903,18 @@ class AnalysisEngine:
 
         self._running = True
         self._current_ticker = ticker
+        self._cancel_event.clear()
         try:
             return await self._execute(ticker, strategy)
+        except asyncio.CancelledError:
+            self._log(f"Analysis for {ticker} was cancelled.")
+            self._on_cancelled(ticker)
+            return {"ticker": ticker, "status": "cancelled"}
         finally:
             self._running = False
             self._current_ticker = None
+            self._current_task = None
+            self._cancel_event.clear()
 
     async def _execute(self, ticker: str, strategy: str = "default") -> dict:
         self._log(f"Starting analysis for {ticker}...")
@@ -894,6 +925,7 @@ class AnalysisEngine:
         if not candles:
             raise RuntimeError(f"No market data available for {ticker}")
         self._log(f"Fetched {len(candles)} candles")
+        self._check_cancelled()
 
         # 2. Compute indicators
         self._log("Computing technical indicators...")
@@ -907,6 +939,8 @@ class AnalysisEngine:
             f"RSI: {indicators['rsi']['value']} | MACD: {indicators['macd']['direction']}"
         )
 
+        self._check_cancelled()
+
         # 2.5 Fetch Reddit sentiment
         sentiment = None
         if ticker != "VNINDEX":
@@ -916,6 +950,8 @@ class AnalysisEngine:
                 self._log(f"Reddit sentiment: {sentiment['sentiment']} (score: {sentiment['sentiment_score']})")
             else:
                 self._log("No Reddit sentiment data found.")
+
+        self._check_cancelled()
 
         # 2.6 Fetch SEC filings
         filings = []
@@ -930,6 +966,8 @@ class AnalysisEngine:
                     self._log("No recent SEC filings found.")
             else:
                 self._log("Could not map ticker to CIK for SEC data.")
+
+        self._check_cancelled()
 
         # 2.7 Fetch enrichment data in parallel
         self._log("Fetching macro, analyst, and market intelligence data...")
@@ -972,6 +1010,8 @@ class AnalysisEngine:
         if fear_greed:
             self._log(f"Fear & Greed Index: {fear_greed['score']}/100 ({fear_greed['rating']})")
 
+        self._check_cancelled()
+
         # 2.8 Fetch market context (if available)
         market_ctx = ""
         try:
@@ -981,6 +1021,8 @@ class AnalysisEngine:
                 self._log("Injecting market context into analysis")
         except Exception:
             pass
+
+        self._check_cancelled()
 
         # 3. Call LLM
         from app.services.strategies import get_strategy
@@ -1051,6 +1093,9 @@ class AnalysisEngine:
                 )
 
                 async for chunk in stream:
+                    if self._cancel_event.is_set():
+                        await stream.close()
+                        raise asyncio.CancelledError("Analysis cancelled during LLM streaming")
                     delta = chunk.choices[0].delta if chunk.choices else None
                     if delta and delta.content:
                         chunks.append(delta.content)

@@ -46,6 +46,8 @@ async def run_analysis(ticker: str, strategy: str = Query(default="default")):
     async def _run():
         try:
             await analysis_engine.run_analysis(ticker, strategy=strategy)
+        except asyncio.CancelledError:
+            pass  # Handled inside run_analysis
         except Exception as e:
             # Log the error through the engine's callback system
             for cb in analysis_engine._log_callbacks:
@@ -57,8 +59,20 @@ async def run_analysis(ticker: str, strategy: str = Query(default="default")):
             analysis_engine._running = False
             analysis_engine._current_ticker = None
 
-    asyncio.create_task(_run())
+    task = asyncio.create_task(_run())
+    analysis_engine._current_task = task
     return {"status": "started", "ticker": ticker}
+
+
+@router.post("/cancel")
+async def cancel_analysis():
+    """Cancel the currently running analysis."""
+    if not analysis_engine.is_running:
+        raise HTTPException(status_code=409, detail="No analysis is currently running")
+
+    ticker = analysis_engine.current_ticker
+    await analysis_engine.cancel()
+    return {"status": "cancelled", "ticker": ticker}
 
 
 @router.get("/status")

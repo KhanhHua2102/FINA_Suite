@@ -144,8 +144,17 @@ def on_analysis_complete(report: dict):
     }))
 
 
+def on_analysis_cancelled(ticker: str):
+    """Callback when analysis is cancelled."""
+    _schedule_broadcast(manager.broadcast("analysis_logs", {
+        "type": "analysis_cancelled",
+        "ticker": ticker,
+    }))
+
+
 analysis_engine.register_log_callback(on_analysis_log)
 analysis_engine.register_complete_callback(on_analysis_complete)
+analysis_engine.register_cancel_callback(on_analysis_cancelled)
 
 
 @router.websocket("/ws")

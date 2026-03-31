@@ -116,7 +116,7 @@ export const chartsApi = {
 export const predictionsApi = {
   get: (ticker: string) =>
     fetchJson<{
-      signals: Record<string, { long: number; short: number; high_bound: number; low_bound: number }>;
+      signals: Record<string, { long: number; short: number; high_bound: number; low_bound: number; trained?: boolean }>;
       current_price: number;
     }>(`/predictions/${ticker}`),
 };
@@ -161,6 +161,9 @@ export const analysisApi = {
 
   getReport: (id: number) =>
     fetchJson<AnalysisReport>(`/analysis/report/${id}`),
+
+  cancel: () =>
+    fetchJson<{ status: string; ticker: string | null }>('/analysis/cancel', { method: 'POST' }),
 };
 
 // Market endpoints

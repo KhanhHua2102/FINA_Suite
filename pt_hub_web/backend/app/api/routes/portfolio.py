@@ -15,7 +15,7 @@ router = APIRouter()
 
 class OptimizeRequest(BaseModel):
     tickers: List[str] = Field(..., min_length=2)
-    strategy: str = Field(default="mean-variance", pattern="^(mean-variance|equal-weight)$")
+    strategy: str = Field(default="mean-variance", pattern="^(mean-variance|equal-weight|max-sharpe)$")
 
 
 class RiskReturnRequest(BaseModel):
@@ -115,6 +115,27 @@ def _portfolio_stats(weights: list[float], mean_returns: list[float], cov_matrix
     }
 
 
+def _local_max_sharpe(mean_returns: list[float], cov_matrix: list[list[float]], n: int, iterations: int = 20000) -> list[float]:
+    """Find max-Sharpe weights via random search over the simplex (pure Python fallback)."""
+    import random
+
+    best_sharpe = -float("inf")
+    best_weights = [1.0 / n] * n
+
+    for _ in range(iterations):
+        # Generate random weights on the simplex via Dirichlet-like sampling
+        raw = [random.expovariate(1.0) for _ in range(n)]
+        total = sum(raw)
+        w = [r / total for r in raw]
+
+        stats = _portfolio_stats(w, mean_returns, cov_matrix)
+        if stats["sharpe_ratio"] > best_sharpe:
+            best_sharpe = stats["sharpe_ratio"]
+            best_weights = w
+
+    return best_weights
+
+
 @router.post("/optimize")
 async def optimize_portfolio(req: OptimizeRequest):
     """Optimize portfolio weights using Portfolio Optimizer API or equal-weight fallback."""
@@ -143,7 +164,7 @@ async def optimize_portfolio(req: OptimizeRequest):
             "strategy": "equal-weight",
         }
 
-    # Mean-variance: fetch returns, compute covariance, call Portfolio Optimizer API
+    # Mean-variance / max-sharpe: fetch returns, compute covariance, call Portfolio Optimizer API
     returns_map = await asyncio.to_thread(_fetch_returns, tickers)
     valid_tickers = [t for t in tickers if t in returns_map]
 
@@ -153,7 +174,12 @@ async def optimize_portfolio(req: OptimizeRequest):
     cov_matrix = _compute_covariance_matrix(returns_map, valid_tickers)
     mean_returns = _compute_mean_returns(returns_map, valid_tickers)
 
-    # Call Portfolio Optimizer API for minimum-variance portfolio
+    api_endpoints = {
+        "mean-variance": "https://api.portfoliooptimizer.io/v1/portfolio/optimization/minimum-variance",
+        "max-sharpe": "https://api.portfoliooptimizer.io/v1/portfolio/optimization/maximum-sharpe-ratio",
+    }
+    api_url = api_endpoints[req.strategy]
+
     try:
         api_body = {
             "assets": len(valid_tickers),
@@ -161,28 +187,33 @@ async def optimize_portfolio(req: OptimizeRequest):
             "assetsReturns": mean_returns,
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.portfoliooptimizer.io/v1/portfolio/optimization/minimum-variance",
-                json=api_body,
-                timeout=15.0,
-            )
+            response = await client.post(api_url, json=api_body, timeout=15.0)
             if response.status_code == 200:
                 data = response.json()
                 weights = data.get("assetsWeights", [])
                 if weights and len(weights) == len(valid_tickers):
-                    # Map back including any tickers that failed data fetch
                     assets = []
                     weight_map = {valid_tickers[i]: weights[i] for i in range(len(valid_tickers))}
                     for t in tickers:
                         assets.append({"ticker": t, "weight": round(weight_map.get(t, 0.0), 4)})
                     stats = _portfolio_stats(weights, mean_returns, cov_matrix)
-                    return {"assets": assets, **stats, "strategy": "mean-variance"}
+                    return {"assets": assets, **stats, "strategy": req.strategy}
 
             logger.warning(f"Portfolio Optimizer API returned {response.status_code}: {response.text}")
     except Exception as e:
         logger.warning(f"Portfolio Optimizer API failed: {e}")
 
-    # Fallback: equal-weight
+    # Fallback: local max-Sharpe search or equal-weight
+    if req.strategy == "max-sharpe":
+        logger.info("Falling back to local max-Sharpe search")
+        weights = _local_max_sharpe(mean_returns, cov_matrix, len(valid_tickers))
+        assets = []
+        weight_map = {valid_tickers[i]: weights[i] for i in range(len(valid_tickers))}
+        for t in tickers:
+            assets.append({"ticker": t, "weight": round(weight_map.get(t, 0.0), 4)})
+        stats = _portfolio_stats(weights, mean_returns, cov_matrix)
+        return {"assets": assets, **stats, "strategy": "max-sharpe (local)"}
+
     logger.info("Falling back to equal-weight allocation")
     weight = 1.0 / len(valid_tickers)
     eq_weights = [weight] * len(valid_tickers)

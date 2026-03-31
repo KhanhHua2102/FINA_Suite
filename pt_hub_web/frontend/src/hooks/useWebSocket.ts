@@ -10,6 +10,7 @@ type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number>();
+  const intentionalDisconnectRef = useRef(false);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
 
   const {
@@ -36,6 +37,7 @@ export function useWebSocket() {
       return;
     }
 
+    intentionalDisconnectRef.current = false;
     setStatus('connecting');
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -94,6 +96,20 @@ export function useWebSocket() {
             break;
           }
 
+          case 'analysis_cancelled': {
+            setAnalysisRunning(false, null);
+            const ticker = message.ticker;
+            if (ticker) {
+              import('../store/portfolioAnalysisStore').then(({ usePortfolioAnalysisStore }) => {
+                const paState = usePortfolioAnalysisStore.getState();
+                if (paState.isRunning) {
+                  paState.onTickerComplete(ticker, null as unknown as AnalysisReport);
+                }
+              });
+            }
+            break;
+          }
+
           case 'runner_ready':
           case 'connected':
           case 'subscribed':
@@ -113,15 +129,18 @@ export function useWebSocket() {
       setStatus('disconnected');
       wsRef.current = null;
 
-      reconnectTimeoutRef.current = window.setTimeout(() => {
-        connect();
-      }, 3000);
+      if (!intentionalDisconnectRef.current) {
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          connect();
+        }, 3000);
+      }
     };
 
     wsRef.current = ws;
   }, [setProcessStatus, addLog, setNeuralSignals, addTrainerLog, addAnalysisLog, setAnalysisRunning, setLatestReport, wsToken]);
 
   const disconnect = useCallback(() => {
+    intentionalDisconnectRef.current = true;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }

@@ -9,7 +9,7 @@ import type { PortfolioOptimizationResult, RebalanceResult, CorrelationResult } 
 
 const dt = (t: string) => t.replace(/:.*$/, '');
 
-type Strategy = 'mean-variance' | 'equal-weight';
+type Strategy = 'mean-variance' | 'equal-weight' | 'max-sharpe';
 type RebalanceStrategy = 'rebalance' | 'buy-only';
 type InputMode = 'qty-price' | 'value';
 
@@ -202,6 +202,7 @@ export function OptimizeView() {
               size="sm"
             >
               <SelectItem key="mean-variance">Mean-Variance (Min Volatility)</SelectItem>
+              <SelectItem key="max-sharpe">Max Sharpe Ratio</SelectItem>
               <SelectItem key="equal-weight">Equal Weight</SelectItem>
             </Select>
           </div>
@@ -275,6 +276,8 @@ export function OptimizeView() {
                 <p className="text-xs leading-relaxed" style={{ color: '#a1a1aa' }}>
                   {results.strategy === 'mean-variance'
                     ? 'Mean-Variance Optimization (Minimum Volatility) via Portfolio Optimizer API. Weights are computed to minimize portfolio risk given historical return correlations.'
+                    : results.strategy.startsWith('max-sharpe')
+                    ? `Maximum Sharpe Ratio Optimization${results.strategy.includes('local') ? ' (local fallback)' : ' via Portfolio Optimizer API'}. Weights are computed to maximize risk-adjusted returns (highest return per unit of risk).`
                     : results.strategy.includes('fallback')
                     ? 'Equal Weight (fallback). The optimization API was unavailable, so weights are distributed equally across selected assets.'
                     : 'Equal Weight allocation. Each asset receives an identical share of the portfolio.'}

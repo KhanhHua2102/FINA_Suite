@@ -352,6 +352,10 @@ export const usePortfolioAnalysisStore = create<PortfolioAnalysisState>((set, ge
 
   cancel: () => {
     set({ cancelled: true });
+    // Tell backend to abort the current analysis
+    analysisApi.cancel().catch(() => {
+      // Ignore — analysis may have already finished
+    });
   },
 
   reset: () => {

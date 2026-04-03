@@ -205,6 +205,8 @@ async def upload_receipt(file: UploadFile = File(...)):
         return result
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid receipt upload")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Receipt processing failed")
 
 
 @router.get("/receipts/{receipt_id}")
@@ -242,6 +244,8 @@ async def reprocess_receipt(receipt_id: int):
         return result
     except ValueError:
         raise HTTPException(status_code=400, detail="Failed to reprocess receipt")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Receipt reprocessing failed")
 
 
 # ── Statistics & Tax (MUST be before /{expense_id} routes) ──────

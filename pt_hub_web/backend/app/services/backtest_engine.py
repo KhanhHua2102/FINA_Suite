@@ -47,7 +47,8 @@ def evaluate_report(report: dict, forward_days: int = 10) -> Optional[dict]:
 
     # Get forward candles (trading days after the analysis)
     forward = candles[start_idx + 1: start_idx + 1 + forward_days]
-    if len(forward) < 3:  # Need at least 3 days of forward data
+    min_days = 1 if forward_days <= 1 else 3
+    if len(forward) < min_days:
         return None
 
     # Walk forward day by day
@@ -171,3 +172,23 @@ async def run_backtest(
     summary["errors"] = errors
 
     return summary
+
+
+async def quick_verify(report: dict) -> Optional[dict]:
+    """Quick next-day verification for a single report.
+
+    Returns a simplified result with direction and 1-day return,
+    or None if next-day data isn't available yet.
+    """
+    result = await asyncio.to_thread(evaluate_report, report, forward_days=1)
+    if result is None:
+        return None
+    return {
+        "report_id": result["report_id"],
+        "ticker": result["ticker"],
+        "analysis_date": result["analysis_date"],
+        "direction_correct": result["direction_correct"],
+        "return_pct": result["return_pct"],
+        "next_day_close": result["exit_price"],
+        "decision": result["decision"],
+    }

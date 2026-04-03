@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.services.analysis_db import AnalysisDB
-from app.services.backtest_engine import run_backtest
+from app.services.backtest_engine import run_backtest, quick_verify
 
 router = APIRouter()
 
@@ -46,6 +46,17 @@ async def get_summary(ticker: Optional[str] = Query(default=None)):
     db = AnalysisDB(settings.analysis_db_path)
     summary = db.get_backtest_summary(ticker=ticker)
     return {"summary": summary}
+
+
+@router.get("/verify/{report_id}")
+async def verify_report(report_id: int):
+    """Quick next-day verification for a specific analysis report."""
+    db = AnalysisDB(settings.analysis_db_path)
+    report = db.get_report(report_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    result = await quick_verify(report)
+    return {"result": result}
 
 
 @router.get("/results/{report_id}")

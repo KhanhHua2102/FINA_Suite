@@ -563,6 +563,39 @@ def _macd(closes: list) -> dict:
     }
 
 
+def _bias_rate(closes: list, period: int) -> Optional[float]:
+    """Price deviation from SMA as a percentage."""
+    sma = _sma(closes, period)
+    if sma is None or sma == 0:
+        return None
+    return round((closes[-1] - sma) / sma * 100, 2)
+
+
+def _classify_trend(sma5, sma10, sma20, sma60, closes) -> str:
+    """Classify MA trend into 7 levels from STRONG_BULL to STRONG_BEAR."""
+    if None in (sma5, sma10, sma20):
+        return "insufficient_data"
+
+    price = closes[-1]
+    # Check if MAs are rising (compare last SMA to SMA shifted by 5 periods)
+    sma20_prev = _sma(closes[:-5], 20) if len(closes) > 25 else sma20
+
+    if sma5 > sma10 > sma20 and (sma60 is None or sma20 > sma60):
+        if sma20_prev and sma20 > sma20_prev:
+            return "STRONG_BULL"
+        return "BULL"
+    elif sma5 > sma20 and (sma60 is None or price > sma60):
+        return "WEAK_BULL"
+    elif sma5 < sma10 < sma20 and (sma60 is None or sma20 < sma60):
+        if sma20_prev and sma20 < sma20_prev:
+            return "STRONG_BEAR"
+        return "BEAR"
+    elif sma5 < sma20 and (sma60 is None or price < sma60):
+        return "WEAK_BEAR"
+    else:
+        return "NEUTRAL"
+
+
 def _pivot_support_resistance(candles: list, window: int = 5) -> dict:
     highs = [c["high"] for c in candles]
     lows = [c["low"] for c in candles]
@@ -585,10 +618,14 @@ def compute_indicators(candles: list) -> dict:
     closes = [c["close"] for c in candles]
     volumes = [c["volume"] for c in candles]
 
+    sma5 = _sma(closes, 5)
+    sma10 = _sma(closes, 10)
     sma20 = _sma(closes, 20)
     sma50 = _sma(closes, 50)
+    sma60 = _sma(closes, 60)
     sma200 = _sma(closes, 200)
 
+    # Legacy 4-level alignment (backward compat)
     if sma20 and sma50 and sma200:
         if sma20 > sma50 > sma200:
             alignment = "bullish"
@@ -599,7 +636,13 @@ def compute_indicators(candles: list) -> dict:
     else:
         alignment = "insufficient_data"
 
-    rsi_val = _rsi(closes)
+    # 7-level trend classification
+    trend_level = _classify_trend(sma5, sma10, sma20, sma60, closes)
+
+    # Multi-period RSI
+    rsi_6 = _rsi(closes, 6)
+    rsi_val = _rsi(closes, 14)
+    rsi_24 = _rsi(closes, 24)
     rsi_zone = "neutral"
     if rsi_val is not None:
         if rsi_val >= 70:
@@ -609,13 +652,25 @@ def compute_indicators(candles: list) -> dict:
 
     macd_data = _macd(closes)
 
+    # Bias rate (price deviation from MAs)
+    bias_5 = _bias_rate(closes, 5)
+    bias_10 = _bias_rate(closes, 10)
+    bias_20 = _bias_rate(closes, 20)
+
     vol_avg = sum(volumes[-20:]) / min(len(volumes), 20) if volumes else 0
     vol_current = volumes[-1] if volumes else 0
     vol_ratio = round(vol_current / vol_avg, 2) if vol_avg > 0 else 0
 
+    # Volume categorization
+    if vol_ratio >= 1.5:
+        vol_category = "heavy"
+    elif vol_ratio <= 0.7:
+        vol_category = "shrink"
+    else:
+        vol_category = "normal"
+
     sr = _pivot_support_resistance(candles)
 
-    all_closes = closes
     high_52w = max(c["high"] for c in candles[-min(252, len(candles)):])
     low_52w = min(c["low"] for c in candles[-min(252, len(candles)):])
 
@@ -625,16 +680,25 @@ def compute_indicators(candles: list) -> dict:
             "sma50": round(sma50, 2) if sma50 else None,
             "sma200": round(sma200, 2) if sma200 else None,
             "status": alignment,
+            "trend_level": trend_level,
         },
         "rsi": {
             "value": round(rsi_val, 1) if rsi_val else None,
+            "rsi_6": round(rsi_6, 1) if rsi_6 else None,
+            "rsi_24": round(rsi_24, 1) if rsi_24 else None,
             "zone": rsi_zone,
         },
         "macd": macd_data,
+        "bias_rate": {
+            "bias_5": bias_5,
+            "bias_10": bias_10,
+            "bias_20": bias_20,
+        },
         "volume": {
             "current": vol_current,
             "average": round(vol_avg, 0),
             "ratio": vol_ratio,
+            "category": vol_category,
         },
         "support": sr["support"],
         "resistance": sr["resistance"],
@@ -645,9 +709,153 @@ def compute_indicators(candles: list) -> dict:
     }
 
 
+def compute_trend_prejudgment(indicators: dict, current_price: float, candles: list) -> dict:
+    """Pre-compute a composite trend score with bullish/bearish reasons.
+
+    Scoring weights (total 100):
+      Trend alignment: 30, Bias: 20, Volume: 15, MACD: 15, Support/Resistance: 10, RSI: 10
+    """
+    reasons: list[str] = []
+    risks: list[str] = []
+
+    # --- Trend score (0-30) ---
+    trend_level = indicators["ma_alignment"].get("trend_level", "NEUTRAL")
+    trend_map = {
+        "STRONG_BULL": 30, "BULL": 25, "WEAK_BULL": 18,
+        "NEUTRAL": 15,
+        "WEAK_BEAR": 12, "BEAR": 5, "STRONG_BEAR": 0,
+        "insufficient_data": 15,
+    }
+    trend_score = trend_map.get(trend_level, 15)
+    if trend_level in ("STRONG_BULL", "BULL"):
+        reasons.append(f"MA trend is {trend_level.replace('_', ' ').lower()}")
+    elif trend_level in ("STRONG_BEAR", "BEAR"):
+        risks.append(f"MA trend is {trend_level.replace('_', ' ').lower()}")
+
+    # --- Bias score (0-20) ---
+    bias = indicators.get("bias_rate", {})
+    bias_20 = bias.get("bias_20")
+    bias_score = 10  # neutral default
+    if bias_20 is not None:
+        if -2 <= bias_20 <= 2:
+            bias_score = 15  # near MA, good for entries
+            reasons.append(f"Price near SMA20 (bias {bias_20:+.1f}%)")
+        elif bias_20 > 5:
+            bias_score = 5  # overextended
+            risks.append(f"Price overextended above SMA20 (bias {bias_20:+.1f}%)")
+        elif bias_20 < -5:
+            bias_score = 5
+            risks.append(f"Price overextended below SMA20 (bias {bias_20:+.1f}%)")
+        elif bias_20 > 2:
+            bias_score = 12
+        else:  # -5 < bias_20 < -2
+            bias_score = 8
+
+    # --- Volume score (0-15) ---
+    vol = indicators["volume"]
+    vol_ratio = vol.get("ratio", 1.0)
+    vol_cat = vol.get("category", "normal")
+    if vol_cat == "heavy":
+        vol_score = 13
+        reasons.append(f"Volume confirmation ({vol_ratio:.1f}x average)")
+    elif vol_cat == "shrink":
+        vol_score = 6
+        risks.append(f"Low volume ({vol_ratio:.1f}x average)")
+    else:
+        vol_score = 10
+
+    # --- MACD score (0-15) ---
+    macd = indicators["macd"]
+    histogram = macd.get("histogram")
+    macd_dir = macd.get("direction", "unknown")
+    if macd_dir == "bullish":
+        macd_score = 12
+        if histogram and histogram > 0:
+            reasons.append("MACD histogram positive (bullish momentum)")
+    elif macd_dir == "bearish":
+        macd_score = 3
+        if histogram and histogram < 0:
+            risks.append("MACD histogram negative (bearish momentum)")
+    else:
+        macd_score = 7
+
+    # --- Support/Resistance score (0-10) ---
+    supports = indicators.get("support", [])
+    resistances = indicators.get("resistance", [])
+    sr_score = 5  # neutral
+    if supports and current_price > 0:
+        nearest_support = max(s for s in supports if s <= current_price) if any(s <= current_price for s in supports) else None
+        if nearest_support:
+            dist = (current_price - nearest_support) / current_price * 100
+            if dist < 2:
+                sr_score = 8
+                reasons.append(f"Near support at {nearest_support:.2f} ({dist:.1f}% below)")
+    if resistances and current_price > 0:
+        nearest_resistance = min(r for r in resistances if r >= current_price) if any(r >= current_price for r in resistances) else None
+        if nearest_resistance:
+            dist = (nearest_resistance - current_price) / current_price * 100
+            if dist < 2:
+                sr_score = max(sr_score - 2, 2)
+                risks.append(f"Near resistance at {nearest_resistance:.2f} ({dist:.1f}% above)")
+
+    # --- RSI score (0-10) ---
+    rsi = indicators["rsi"]
+    rsi_val = rsi.get("value")
+    rsi_zone = rsi.get("zone", "neutral")
+    if rsi_zone == "overbought":
+        rsi_score = 2
+        risks.append(f"RSI overbought at {rsi_val:.0f}")
+    elif rsi_zone == "oversold":
+        rsi_score = 8
+        reasons.append(f"RSI oversold at {rsi_val:.0f} (potential reversal)")
+    elif rsi_val is not None:
+        rsi_score = 5 if rsi_val > 50 else 4
+    else:
+        rsi_score = 5
+
+    signal_score = trend_score + bias_score + vol_score + macd_score + sr_score + rsi_score
+
+    return {
+        "signal_score": signal_score,
+        "score_breakdown": {
+            "trend": trend_score,
+            "bias": bias_score,
+            "volume": vol_score,
+            "macd": macd_score,
+            "support_resistance": sr_score,
+            "rsi": rsi_score,
+        },
+        "trend_status": trend_level,
+        "reasons": reasons,
+        "risks": risks,
+    }
+
+
 # ---------------------------------------------------------------------------
 # LLM prompt
 # ---------------------------------------------------------------------------
+
+def _format_trend_analysis(trend_analysis: Optional[dict]) -> str:
+    if not trend_analysis:
+        return ""
+    bd = trend_analysis.get("score_breakdown", {})
+    reasons = trend_analysis.get("reasons", [])
+    risks = trend_analysis.get("risks", [])
+    lines = [
+        "## Pre-computed Trend Analysis",
+        f"- Trend Status: {trend_analysis.get('trend_status', 'N/A')}",
+        f"- Signal Score: {trend_analysis.get('signal_score', 'N/A')}/100",
+        f"- Breakdown: Trend {bd.get('trend', 0)}/30, Bias {bd.get('bias', 0)}/20, "
+        f"Volume {bd.get('volume', 0)}/15, MACD {bd.get('macd', 0)}/15, "
+        f"S/R {bd.get('support_resistance', 0)}/10, RSI {bd.get('rsi', 0)}/10",
+    ]
+    if reasons:
+        lines.append("- Bullish Factors: " + "; ".join(reasons))
+    if risks:
+        lines.append("- Risk Factors: " + "; ".join(risks))
+    return "\n".join(lines) + "\n\n"
+
+
 def build_prompt(
     ticker: str,
     current_price: float,
@@ -664,6 +872,7 @@ def build_prompt(
     fear_greed: Optional[dict] = None,
     strategy_instructions: str = "",
     market_context: str = "",
+    trend_analysis: Optional[dict] = None,
 ) -> str:
     ma = indicators["ma_alignment"]
     rsi = indicators["rsi"]
@@ -781,32 +990,9 @@ Apply this strategic lens when evaluating the data above.
     if market_context:
         market_overview_section = f"## Market Overview\n{market_context}\n"
 
-    return f"""You are a senior technical analyst. Analyze the following market data for {ticker} and provide a structured trading decision.
-
-{market_overview_section}## Market Data
-- Current Price: {current_price}
-- 52-Week Range: {indicators['price_range_52w']['low']} - {indicators['price_range_52w']['high']}
-
-{sentiment_section}
-{filings_section}
-{analyst_section}
-{price_target_section}
-{news_section}
-{valuation_section}
-{macro_section}
-{treasury_section}
-## Technical Indicators
-...
-
-- MA Alignment: SMA20={ma['sma20']}, SMA50={ma['sma50']}, SMA200={ma['sma200']} ({ma['status']})
-- RSI(14): {rsi['value']} ({rsi['zone']})
-- MACD: Signal={macd['signal']}, Histogram={macd['histogram']} ({macd['direction']})
-- Volume: Current={vol['current']:,.0f} vs Avg={vol['average']:,.0f} ({vol['ratio']}x average)
-- Key Support Levels: {indicators['support']}
-- Key Resistance Levels: {indicators['resistance']}
-
-{strategy_section}## Instructions
-Provide your analysis in EXACTLY this JSON format (no markdown, no code fences, just raw JSON):
+    system_prompt = f"""You are a senior technical analyst. You analyze market data and provide structured trading decisions.
+{strategy_section}
+You MUST respond with valid JSON matching this exact schema (no markdown, no code fences, just raw JSON):
 {{
   "decision": "BUY" or "HOLD" or "SELL",
   "score": <0-100 confidence integer>,
@@ -823,8 +1009,43 @@ Provide your analysis in EXACTLY this JSON format (no markdown, no code fences, 
     {{"item": "<criterion description>", "passed": true or false}},
     {{"item": "<criterion description>", "passed": true or false}},
     {{"item": "<criterion description>", "passed": true or false}}
-  ]
+  ],
+  "battle_plan": {{
+    "entry_strategy": "<when and how to enter the position>",
+    "exit_strategy": "<when and how to exit, including partial exits>",
+    "risk_management": "<position sizing, stop adjustment, max loss guidance>"
+  }},
+  "time_horizon": "short_term" or "medium_term" or "long_term"
 }}"""
+
+    user_prompt = f"""Analyze the following market data for {ticker} and provide a structured trading decision.
+
+{market_overview_section}## Market Data
+- Current Price: {current_price}
+- 52-Week Range: {indicators['price_range_52w']['low']} - {indicators['price_range_52w']['high']}
+
+{sentiment_section}
+{filings_section}
+{analyst_section}
+{price_target_section}
+{news_section}
+{valuation_section}
+{macro_section}
+{treasury_section}
+## Technical Indicators
+
+- MA Alignment: SMA20={ma['sma20']}, SMA50={ma['sma50']}, SMA200={ma['sma200']} ({ma['status']})
+- Trend Level: {ma.get('trend_level', 'N/A')}
+- RSI(6): {rsi.get('rsi_6', 'N/A')} | RSI(14): {rsi['value']} ({rsi['zone']}) | RSI(24): {rsi.get('rsi_24', 'N/A')}
+- Bias Rate: SMA5={indicators.get('bias_rate', {}).get('bias_5', 'N/A')}%, SMA10={indicators.get('bias_rate', {}).get('bias_10', 'N/A')}%, SMA20={indicators.get('bias_rate', {}).get('bias_20', 'N/A')}%
+- MACD: Signal={macd['signal']}, Histogram={macd['histogram']} ({macd['direction']})
+- Volume: Current={vol['current']:,.0f} vs Avg={vol['average']:,.0f} ({vol['ratio']}x average, {vol.get('category', 'normal')})
+- Key Support Levels: {indicators['support']}
+- Key Resistance Levels: {indicators['resistance']}
+
+{_format_trend_analysis(trend_analysis)}Provide your analysis as JSON now."""
+
+    return system_prompt, user_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -934,8 +1155,12 @@ class AnalysisEngine:
         prev_price = candles[-2]["close"] if len(candles) > 1 else current_price
         price_change_pct = round((current_price - prev_price) / prev_price * 100, 2)
 
+        # 2.1 Compute trend prejudgment
+        trend_analysis = compute_trend_prejudgment(indicators, current_price, candles)
+
         self._log(
-            f"Price: {current_price} | MA: {indicators['ma_alignment']['status']} | "
+            f"Price: {current_price} | Trend: {trend_analysis['trend_status']} "
+            f"(score: {trend_analysis['signal_score']}/100) | "
             f"RSI: {indicators['rsi']['value']} | MACD: {indicators['macd']['direction']}"
         )
 
@@ -1030,16 +1255,43 @@ class AnalysisEngine:
         if strategy != "default":
             self._log(f"Using strategy: {strat['name']}")
         self._log("Sending to LLM for analysis...")
-        prompt = build_prompt(
+        system_prompt, user_prompt = build_prompt(
             ticker, current_price, indicators, sentiment, filings,
             macro, treasury, analyst, news, price_target, valuation,
             stocktwits, fear_greed, strat["prompt_instructions"], market_ctx,
+            trend_analysis,
         )
-        raw_response = await self._call_llm(prompt)
+        raw_response = await self._call_llm(user_prompt, system_prompt)
 
-        # 4. Parse response
+        # 4. Parse response with validation and retry
         self._log("Parsing LLM response...")
         analysis = self._parse_response(raw_response)
+
+        # Complement retry: if parsing failed or critical fields missing, retry once
+        if analysis.get("_parse_failed") or analysis.get("_missing_fields"):
+            missing = analysis.get("_missing_fields", ["entire response"])
+            self._log(f"Response incomplete (missing: {', '.join(missing)}), retrying...")
+            complement_prompt = (
+                f"Your previous response was missing required fields: {', '.join(missing)}.\n"
+                f"Please provide ONLY the corrected JSON with ALL required fields.\n"
+                f"Required format: {{\"decision\": \"BUY/HOLD/SELL\", \"score\": 0-100, "
+                f"\"conclusion\": \"...\", \"price_levels\": {{\"support\": [...], "
+                f"\"resistance\": [...], \"target\": <float>, \"stop_loss\": <float>}}, "
+                f"\"checklist\": [{{\"item\": \"...\", \"passed\": true/false}}, ...]}}\n"
+                f"Previous response (reference): {raw_response[:500]}"
+            )
+            try:
+                retry_response = await self._call_llm(complement_prompt)
+                retry_analysis = self._parse_response(retry_response)
+                if not retry_analysis.get("_parse_failed"):
+                    analysis = retry_analysis
+                    raw_response = retry_response
+                    self._log("Retry successful")
+            except Exception as e:
+                self._log(f"Retry failed: {e}")
+        # Clean internal flags
+        analysis.pop("_parse_failed", None)
+        analysis.pop("_missing_fields", None)
 
         # 5. Build report
         report = {
@@ -1047,11 +1299,14 @@ class AnalysisEngine:
             "current_price": current_price,
             "price_change_pct": price_change_pct,
             "indicators": indicators,
+            "trend_analysis": trend_analysis,
             "decision": analysis["decision"],
             "score": analysis["score"],
             "conclusion": analysis["conclusion"],
             "price_levels": analysis["price_levels"],
             "checklist": analysis["checklist"],
+            "battle_plan": analysis.get("battle_plan"),
+            "time_horizon": analysis.get("time_horizon", ""),
             "raw_reasoning": raw_response,
             "model_used": settings.llm_model,
             "news": news,
@@ -1068,7 +1323,7 @@ class AnalysisEngine:
         self._on_complete(stored)
         return stored
 
-    async def _call_llm(self, prompt: str) -> str:
+    async def _call_llm(self, prompt: str, system_prompt: str = "") -> str:
         import httpx as _httpx
         from openai import AsyncOpenAI
 
@@ -1077,6 +1332,11 @@ class AnalysisEngine:
             api_key=settings.llm_api_key,
             timeout=_httpx.Timeout(120.0, connect=30.0),
         )
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
 
         models = [settings.llm_model] + settings.llm_fallback_models
         last_error = None
@@ -1087,7 +1347,7 @@ class AnalysisEngine:
                 chunks = []
                 stream = await client.chat.completions.create(
                     model=model,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=messages,
                     max_tokens=settings.llm_max_tokens,
                     stream=True,
                 )
@@ -1113,10 +1373,10 @@ class AnalysisEngine:
         raise RuntimeError(f"All models failed. Last error: {last_error}")
 
     @staticmethod
-    def _parse_response(raw: str) -> dict:
-        """Parse LLM JSON response with fallback."""
-        # Strip markdown code fences if present
+    def _extract_json(raw: str) -> Optional[dict]:
+        """Multi-step JSON extraction: direct parse → regex → json_repair."""
         text = raw.strip()
+        # Strip markdown code fences
         if text.startswith("```"):
             lines = text.split("\n")
             text = "\n".join(lines[1:])
@@ -1124,25 +1384,124 @@ class AnalysisEngine:
                 text = text[:-3]
             text = text.strip()
 
+        # Step 1: Direct parse
         try:
-            data = json.loads(text)
-            # Validate required fields
-            return {
-                "decision": str(data.get("decision", "HOLD")).upper(),
-                "score": int(data.get("score", 50)),
-                "conclusion": str(data.get("conclusion", "")),
-                "price_levels": data.get("price_levels", {"support": [], "resistance": [], "target": 0, "stop_loss": 0}),
-                "checklist": data.get("checklist", []),
+            return json.loads(text)
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+
+        # Step 2: Regex extraction — find outermost { ... }
+        import re
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except (json.JSONDecodeError, ValueError, TypeError):
+                pass
+
+        # Step 3: json_repair library
+        try:
+            from json_repair import repair_json
+            repaired = repair_json(text, return_objects=True)
+            if isinstance(repaired, dict):
+                return repaired
+        except Exception:
+            pass
+
+        return None
+
+    @staticmethod
+    def _validate_analysis(data: dict) -> tuple[dict, list[str]]:
+        """Validate and coerce analysis fields. Returns (result, missing_fields)."""
+        missing = []
+        default_pl = {"support": [], "resistance": [], "target": 0, "stop_loss": 0}
+
+        decision = str(data.get("decision", "")).upper()
+        if decision not in ("BUY", "HOLD", "SELL"):
+            missing.append("decision")
+            decision = "HOLD"
+
+        try:
+            score = int(data.get("score", 50))
+            score = max(0, min(100, score))
+        except (ValueError, TypeError):
+            missing.append("score")
+            score = 50
+
+        conclusion = str(data.get("conclusion", "")).strip()
+        if not conclusion:
+            missing.append("conclusion")
+
+        price_levels = data.get("price_levels", default_pl)
+        if not isinstance(price_levels, dict):
+            price_levels = default_pl
+            missing.append("price_levels")
+        else:
+            try:
+                target = float(price_levels.get("target", 0))
+            except (ValueError, TypeError):
+                target = 0
+            try:
+                stop_loss = float(price_levels.get("stop_loss", 0))
+            except (ValueError, TypeError):
+                stop_loss = 0
+            if target <= 0:
+                missing.append("price_levels.target")
+            if stop_loss <= 0:
+                missing.append("price_levels.stop_loss")
+            price_levels["target"] = target
+            price_levels["stop_loss"] = stop_loss
+
+        checklist = data.get("checklist", [])
+        if not isinstance(checklist, list) or len(checklist) < 3:
+            missing.append("checklist")
+
+        # Battle plan (optional — not a validation failure if absent)
+        battle_plan = data.get("battle_plan")
+        if isinstance(battle_plan, dict):
+            battle_plan = {
+                "entry_strategy": str(battle_plan.get("entry_strategy", "")),
+                "exit_strategy": str(battle_plan.get("exit_strategy", "")),
+                "risk_management": str(battle_plan.get("risk_management", "")),
             }
-        except (json.JSONDecodeError, ValueError, TypeError) as e:
-            logger.warning(f"Failed to parse LLM response: {e}")
+        else:
+            battle_plan = None
+
+        time_horizon = str(data.get("time_horizon", "")).lower()
+        if time_horizon not in ("short_term", "medium_term", "long_term"):
+            time_horizon = ""
+
+        result = {
+            "decision": decision,
+            "score": score,
+            "conclusion": conclusion,
+            "price_levels": price_levels,
+            "checklist": checklist,
+            "battle_plan": battle_plan,
+            "time_horizon": time_horizon,
+        }
+        return result, missing
+
+    @staticmethod
+    def _parse_response(raw: str) -> dict:
+        """Parse LLM JSON response with multi-step extraction and validation."""
+        data = AnalysisEngine._extract_json(raw)
+        if data is None:
+            logger.warning("Failed to extract JSON from LLM response")
             return {
                 "decision": "HOLD",
                 "score": 50,
-                "conclusion": f"Analysis completed but response parsing failed. Raw output available.",
+                "conclusion": "Analysis completed but response parsing failed. Raw output available.",
                 "price_levels": {"support": [], "resistance": [], "target": 0, "stop_loss": 0},
                 "checklist": [],
+                "_parse_failed": True,
             }
+
+        result, missing = AnalysisEngine._validate_analysis(data)
+        if missing:
+            logger.info(f"LLM response missing fields: {missing}")
+            result["_missing_fields"] = missing
+        return result
 
 
 analysis_engine = AnalysisEngine()

@@ -47,6 +47,12 @@ class AnalysisDB:
                 conn.execute("ALTER TABLE analysis_reports ADD COLUMN news TEXT")
             if "strategy" not in cols:
                 conn.execute("ALTER TABLE analysis_reports ADD COLUMN strategy TEXT DEFAULT 'default'")
+            if "trend_analysis" not in cols:
+                conn.execute("ALTER TABLE analysis_reports ADD COLUMN trend_analysis TEXT")
+            if "battle_plan" not in cols:
+                conn.execute("ALTER TABLE analysis_reports ADD COLUMN battle_plan TEXT")
+            if "time_horizon" not in cols:
+                conn.execute("ALTER TABLE analysis_reports ADD COLUMN time_horizon TEXT")
 
             # Market reviews table
             conn.executescript("""
@@ -92,8 +98,9 @@ class AnalysisDB:
                 """INSERT INTO analysis_reports
                    (ticker, current_price, price_change_pct, indicators,
                     decision, score, conclusion, price_levels, checklist,
-                    raw_reasoning, model_used, news, strategy)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    raw_reasoning, model_used, news, strategy, trend_analysis,
+                    battle_plan, time_horizon)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     report["ticker"],
                     report["current_price"],
@@ -108,6 +115,9 @@ class AnalysisDB:
                     report.get("model_used"),
                     json.dumps(report.get("news", [])),
                     report.get("strategy", "default"),
+                    json.dumps(report.get("trend_analysis")),
+                    json.dumps(report.get("battle_plan")),
+                    report.get("time_horizon", ""),
                 ),
             )
             return cur.lastrowid
@@ -300,7 +310,7 @@ class AnalysisDB:
     @staticmethod
     def _row_to_dict(row: sqlite3.Row) -> dict:
         d = dict(row)
-        for key in ("indicators", "price_levels", "checklist", "news"):
+        for key in ("indicators", "price_levels", "checklist", "news", "trend_analysis", "battle_plan"):
             if d.get(key):
                 d[key] = json.loads(d[key])
         if "news" not in d or d["news"] is None:

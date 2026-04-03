@@ -16,10 +16,11 @@ const BENCHMARK_OPTIONS: { ticker: string; label: string }[] = [
   { ticker: 'IOZ.AX', label: 'IOZ.AX -- iShares ASX 200' },
 ];
 
-type Timeframe = '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL';
+type Timeframe = '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | 'ALL';
 type ChartView = 'performance' | 'value' | 'drawdown';
 
 const TIMEFRAMES: { key: Timeframe; label: string }[] = [
+  { key: '1W', label: '1W' },
   { key: '1M', label: '1M' },
   { key: '3M', label: '3M' },
   { key: '6M', label: '6M' },
@@ -38,6 +39,10 @@ function getCutoffDate(tf: Timeframe): string | null {
   if (tf === 'ALL') return null;
   const now = new Date();
   if (tf === 'YTD') return `${now.getFullYear()}-01-01`;
+  if (tf === '1W') {
+    now.setDate(now.getDate() - 7);
+    return now.toISOString().slice(0, 10);
+  }
   const months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12 }[tf];
   now.setMonth(now.getMonth() - months);
   return now.toISOString().slice(0, 10);

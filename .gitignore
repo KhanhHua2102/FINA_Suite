@@ -1,24 +1,70 @@
+# Python
 __pycache__/
 *.pyc
-.DS_Store
-node_modules/
 venv/
 *.egg-info/
+
+# Node
+node_modules/
+/node_modules
+dist/
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# App data
 /data/
+
+# Secrets & credentials
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 .api_key
+secrets/
 *.key
 *.pem
 *.p12
 *.pfx
-secrets/
-/node_modules
-dist/
-.vite/
-.gitnexus
+*.cert
+*.crt
+*.jks
+*.keystore
+*credential*
+*secret*
+*.gpg
+
+# SSH & auth
+id_rsa
+id_ed25519
+*.pub
+known_hosts
+authorized_keys
+
+# Cloud & infrastructure
+.aws/
+.gcp/
+.azure/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+
+# Databases (prevent accidental commit of local DBs)
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Logs (may contain sensitive data)
+*.log
+logs/
+
+# IDE & tooling
 /.claude
+.gitnexus
 .mcp.json
 AGENTS.md
 CLAUDE.md

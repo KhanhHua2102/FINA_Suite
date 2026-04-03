@@ -10,6 +10,7 @@ Crawl4AI provides headless browser scraping with stealth mode to bypass anti-bot
 """
 
 import json
+import logging
 import re
 import time
 from datetime import datetime
@@ -458,6 +459,7 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str) -> dict:
     all_metrics: list[dict] = []
     sources_tried: list[str] = []
     errors: list[str] = []
+    logger = logging.getLogger(__name__)
 
     # 1. OpenAgent (best free source — median prices, rent, DOM, population)
     sources_tried.append("openagent")
@@ -465,7 +467,8 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str) -> dict:
         oa_metrics = await _scrape_openagent(suburb, state, postcode)
         all_metrics.extend(oa_metrics)
     except Exception as e:
-        errors.append(f"openagent: {e}")
+        logger.exception("openagent scrape failed for %s %s", suburb, state)
+        errors.append("openagent: fetch failed")
 
     # 2. realestate.com.au (fallback for prices — JS-rendered, needs headless)
     sources_tried.append("rea")
@@ -476,7 +479,8 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str) -> dict:
             if m["metric_type"] not in existing_types:
                 all_metrics.append(m)
     except Exception as e:
-        errors.append(f"rea: {e}")
+        logger.exception("rea scrape failed for %s %s", suburb, state)
+        errors.append("rea: fetch failed")
 
     # 3. SQM Research (vacancy rates)
     sources_tried.append("sqm_research")
@@ -484,7 +488,8 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str) -> dict:
         sqm_metrics = await _scrape_sqm_vacancy(suburb, state)
         all_metrics.extend(sqm_metrics)
     except Exception as e:
-        errors.append(f"sqm: {e}")
+        logger.exception("sqm scrape failed for %s %s", suburb, state)
+        errors.append("sqm: fetch failed")
 
     # Store all fetched metrics in DB
     stored = 0
@@ -501,7 +506,8 @@ async def refresh_suburb_data(suburb: str, state: str, postcode: str) -> dict:
             )
             stored += 1
         except Exception as e:
-            errors.append(f"db: {e}")
+            logger.exception("db upsert failed for %s", m.get("metric_type"))
+            errors.append("db: store failed")
 
     result = {
         "suburb": suburb,

@@ -66,7 +66,7 @@ export function Sidebar({ activeTab, onTabChange, connectionStatus, onSettingsCl
               <path d="M12 20V10M18 20V4M6 20v-4" />
             </svg>
           </div>
-          <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>Stock AI Prediction</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>FINA Suite</span>
         </div>
 
         {/* Navigation */}

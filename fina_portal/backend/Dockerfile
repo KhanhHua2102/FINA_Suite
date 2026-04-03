@@ -19,8 +19,8 @@ RUN mkdir -p /app/data/runtime
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PT_PROJECT_DIR=/project
-ENV PT_HUB_DATA_DIR=/project/data/runtime
+ENV FS_PROJECT_DIR=/project
+ENV FS_HUB_DATA_DIR=/project/data/runtime
 
 EXPOSE 8000
 

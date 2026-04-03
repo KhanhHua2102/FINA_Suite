@@ -172,7 +172,7 @@ def ticker_folder(sym: str) -> str:
     return os.path.join(BASE_DIR, _safe_ticker_name(sym))
 
 
-# --- training freshness gate (mirrors pt_hub.py) ---
+# --- training freshness gate ---
 _TRAINING_STALE_SECONDS = 14 * 24 * 60 * 60  # 14 days
 
 

@@ -11,8 +11,8 @@ services:
       # Mount data/runtime for shared state
       - ../data/runtime:/project/data/runtime:rw
     environment:
-      - PT_PROJECT_DIR=/project
-      - PT_HUB_DATA_DIR=/project/data/runtime
+      - FS_PROJECT_DIR=/project
+      - FS_HUB_DATA_DIR=/project/data/runtime
       - PYTHONUNBUFFERED=1
     ports:
       - "8000:8000"

@@ -1,10 +1,10 @@
 {
-  "name": "stock-ai-prediction",
+  "name": "fina-suite",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n backend,frontend -c blue,green \"cd pt_hub_web/backend && ./venv/bin/python -m app.main\" \"cd pt_hub_web/frontend && npx vite\"",
-    "dev:backend": "cd pt_hub_web/backend && ./venv/bin/python -m app.main",
-    "dev:frontend": "cd pt_hub_web/frontend && npx vite"
+    "dev": "concurrently -n backend,frontend -c blue,green \"cd fina_portal/backend && ./venv/bin/python -m app.main\" \"cd fina_portal/frontend && npx vite\"",
+    "dev:backend": "cd fina_portal/backend && ./venv/bin/python -m app.main",
+    "dev:frontend": "cd fina_portal/frontend && npx vite"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

@@ -53,7 +53,7 @@ echo 'YOUR_KRAKEN_SECRET' > ~/powertrader/kraken_secret.txt
 mkdir -p ~/powertrader/data/runtime ~/powertrader/data/training
 
 # Build and run
-cd ~/powertrader/pt_hub_web
+cd ~/powertrader/fina_portal
 docker compose up -d backend frontend
 ```
 
@@ -78,7 +78,7 @@ curl http://localhost:8000/api/health
 
 ```bash
 # View live logs
-cd ~/powertrader/pt_hub_web && docker compose logs -f
+cd ~/powertrader/fina_portal && docker compose logs -f
 
 # Restart services
 docker compose restart
@@ -88,7 +88,7 @@ docker compose down
 
 # Update and redeploy
 cd ~/powertrader && git pull
-cd pt_hub_web && docker compose up -d --build
+cd fina_portal && docker compose up -d --build
 
 # Check resource usage
 docker stats
@@ -136,7 +136,7 @@ ssh -i <REDACTED_KEY_FILE> opc@<REDACTED_IP>
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/Crypto_Trading_PowerTrade.git ~/powertrader && \
-cd ~/powertrader/pt_hub_web && \
+cd ~/powertrader/fina_portal && \
 docker compose up -d backend frontend
 ```
 

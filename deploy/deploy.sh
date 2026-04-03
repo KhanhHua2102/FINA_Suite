@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deployment script for PowerTrader
+# Deployment script for FINA Suite
 # Run this after oracle-setup.sh and re-logging in
 
 set -e
@@ -38,7 +38,7 @@ mkdir -p "$PROJECT_DIR/data/runtime"
 mkdir -p "$PROJECT_DIR/data/training"
 
 echo "=== Building and Starting Containers ==="
-cd "$PROJECT_DIR/pt_hub_web"
+cd "$PROJECT_DIR/fina_portal"
 
 # Build for ARM architecture (Oracle Free Tier uses ARM)
 docker compose build
@@ -58,7 +58,7 @@ echo "  Backend API: http://$(curl -s ifconfig.me):8000"
 echo "  API Docs: http://$(curl -s ifconfig.me):8000/docs"
 echo ""
 echo "Useful commands:"
-echo "  View logs:     cd $PROJECT_DIR/pt_hub_web && docker compose logs -f"
-echo "  Restart:       cd $PROJECT_DIR/pt_hub_web && docker compose restart"
-echo "  Stop:          cd $PROJECT_DIR/pt_hub_web && docker compose down"
-echo "  Update:        cd $PROJECT_DIR && git pull && cd pt_hub_web && docker compose up -d --build"
+echo "  View logs:     cd $PROJECT_DIR/fina_portal && docker compose logs -f"
+echo "  Restart:       cd $PROJECT_DIR/fina_portal && docker compose restart"
+echo "  Stop:          cd $PROJECT_DIR/fina_portal && docker compose down"
+echo "  Update:        cd $PROJECT_DIR && git pull && cd fina_portal && docker compose up -d --build"

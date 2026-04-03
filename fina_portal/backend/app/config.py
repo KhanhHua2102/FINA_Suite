@@ -8,12 +8,12 @@ from typing import List, Optional
 
 class Settings(BaseSettings):
     # Project paths
-    project_dir: Path = Path(__file__).parent.parent.parent.parent  # pt_hub_web's parent
+    project_dir: Path = Path(__file__).parent.parent.parent.parent  # fina_portal's parent
     hub_data_dir: Path = Path("")
 
     # Scripts (in legacy folder)
-    script_neural_runner: str = "legacy/pt_thinker.py"
-    script_trainer: str = "legacy/pt_trainer.py"
+    script_neural_runner: str = "legacy/fina_thinker.py"
+    script_trainer: str = "legacy/fina_trainer.py"
     # Stock prediction config
     tickers: List[str] = ["VNINDEX", "^GSPC", "GLOB.AX", "HCRD.AX", "BGBL.AX", "A200.AX"]
     default_timeframe: str = "1day"
@@ -29,11 +29,11 @@ class Settings(BaseSettings):
     api_port: int = 8000
 
     # API Authentication - SECURITY FIX (Issue #4)
-    # Set via PT_API_KEY environment variable or generate random key
+    # Set via FS_API_KEY environment variable or generate random key
     api_key: Optional[str] = None
 
     # CORS - SECURITY FIX (Issue #5)
-    # Set via PT_CORS_ORIGINS environment variable (comma-separated)
+    # Set via FS_CORS_ORIGINS environment variable (comma-separated)
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8081,http://127.0.0.1:8081"
 
     # Rate Limiting - SECURITY FIX (Issue #7)
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # LLM Analysis (9router - OpenAI-compatible)
     llm_api_base: str = "https://api.9router.com/v1"
-    llm_api_key: Optional[str] = None  # PT_LLM_API_KEY env var
+    llm_api_key: Optional[str] = None  # FS_LLM_API_KEY env var
     llm_model: str = "Stock-Analysis"
     llm_fallback_models: List[str] = ["cc/claude-opus-4-6", "cc/claude-sonnet-4-6"]
     llm_max_tokens: int = 2000
@@ -56,21 +56,21 @@ class Settings(BaseSettings):
     property_db_path: Path = Path("")
     expense_db_path: Path = Path("")
     receipts_dir: Path = Path("")
-    sec_user_agent: str = "StockAIPrediction/1.0 (<REDACTED_EMAIL>)"
+    sec_user_agent: str = "FINASuite/1.0 (<REDACTED_EMAIL>)"
 
-    # Phase 2 API keys (set via PT_FINNHUB_API_KEY, PT_FRED_API_KEY, PT_TWELVEDATA_API_KEY)
+    # Phase 2 API keys (set via FS_FINNHUB_API_KEY, FS_FRED_API_KEY, FS_TWELVEDATA_API_KEY)
     finnhub_api_key: Optional[str] = None
     fred_api_key: Optional[str] = None
     twelvedata_api_key: Optional[str] = None
 
-    # Phase 3 API keys (set via PT_FMP_API_KEY, PT_POLYGON_API_KEY)
+    # Phase 3 API keys (set via FS_FMP_API_KEY, FS_POLYGON_API_KEY)
     fmp_api_key: Optional[str] = None
     polygon_api_key: Optional[str] = None
 
 
 
     model_config = SettingsConfigDict(
-        env_prefix="PT_",
+        env_prefix="FS_",
         env_file=str(Path(__file__).parent.parent.parent.parent / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
@@ -115,15 +115,15 @@ class Settings(BaseSettings):
         lines = []
         if env_path.exists():
             lines = env_path.read_text().splitlines()
-        # Replace existing PT_API_KEY line or append
+        # Replace existing FS_API_KEY line or append
         found = False
         for i, line in enumerate(lines):
-            if line.startswith("PT_API_KEY="):
-                lines[i] = f"PT_API_KEY={self.api_key}"
+            if line.startswith("FS_API_KEY="):
+                lines[i] = f"FS_API_KEY={self.api_key}"
                 found = True
                 break
         if not found:
-            lines.append(f"PT_API_KEY={self.api_key}")
+            lines.append(f"FS_API_KEY={self.api_key}")
         env_path.write_text("\n".join(lines) + "\n")
         print(f"\n{'='*60}")
         print("SECURITY: New API key generated and saved to .env")

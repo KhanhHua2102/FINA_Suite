@@ -1,10 +1,10 @@
 # Trading Strategy & Methodology
 
-This document describes the prediction system used by Stock AI Prediction — how models are trained, how signals are generated, and how the system decides what to show on the dashboard.
+This document describes the prediction system used by FINA Suite — how models are trained, how signals are generated, and how the system decides what to show on the dashboard.
 
 ## Overview
 
-Stock AI Prediction uses a **pattern-matching predictor** (instance-based k-NN with learned reliability weights) to generate multi-timeframe trading signals. It is not a neural network or deep learning model — it works by comparing the current price pattern against a library of historical patterns and taking a weighted average of what happened next.
+FINA Suite uses a **pattern-matching predictor** (instance-based k-NN with learned reliability weights) to generate multi-timeframe trading signals. It is not a neural network or deep learning model — it works by comparing the current price pattern against a library of historical patterns and taking a weighted average of what happened next.
 
 The system covers US (S&P 500, individual stocks), Australian (ASX ETFs/stocks), and Vietnamese (VNINDEX) markets.
 

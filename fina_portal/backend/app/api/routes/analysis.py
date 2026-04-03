@@ -33,7 +33,7 @@ async def run_analysis(ticker: str, strategy: str = Query(default="default")):
     if not settings.llm_api_key:
         raise HTTPException(
             status_code=400,
-            detail="LLM API key not configured. Set PT_LLM_API_KEY environment variable.",
+            detail="LLM API key not configured. Set FS_LLM_API_KEY environment variable.",
         )
 
     if analysis_engine.is_running:

@@ -8,7 +8,7 @@ const projectRoot = path.resolve(__dirname, '../..')
 let apiKey = ''
 try {
   const envContent = fs.readFileSync(path.join(projectRoot, '.env'), 'utf-8')
-  const match = envContent.match(/^PT_API_KEY=(.+)$/m)
+  const match = envContent.match(/^FS_API_KEY=(.+)$/m)
   if (match) apiKey = match[1].trim()
 } catch {
   console.warn('No .env file found — API requests will fail auth')

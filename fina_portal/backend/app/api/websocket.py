@@ -173,7 +173,7 @@ async def websocket_endpoint(
     # Send initial state
     await manager.send_personal(websocket, {
         "type": "connected",
-        "message": "Connected to PowerTrader Hub"
+        "message": "Connected to FINA Suite"
     })
 
     try:

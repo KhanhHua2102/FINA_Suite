@@ -18,7 +18,7 @@ def get_python_executable() -> str:
 
     Prefers the project's venv Python which has all required dependencies.
     """
-    # Try project venv first (project root, not pt_hub_web)
+    # Try project venv first (project root, not fina_portal)
     project_venv = settings.project_dir / "venv" / "bin" / "python"
     if project_venv.exists():
         return str(project_venv)
@@ -58,8 +58,7 @@ class ProcessInfo:
 
 class ProcessManager:
     """
-    Manages pt_thinker.py and pt_trainer.py processes.
-    Mirrors subprocess management from pt_hub.py.
+    Manages fina_thinker.py and fina_trainer.py processes.
     """
 
     def __init__(self):

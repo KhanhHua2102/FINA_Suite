@@ -1,5 +1,5 @@
 """
-Performance & Reliability Utilities for PowerTrader
+Performance & Reliability Utilities for FINA Suite
 ====================================================
 Addresses performance issues identified in SECURITY_AND_PERFORMANCE_ANALYSIS.md:
 - Issue 2: Memory caching for training data

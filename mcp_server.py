@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MCP Server for Stock AI Prediction — exposes trading intelligence as tools."""
+"""MCP Server for FINA Suite — exposes trading intelligence as tools."""
 
 import asyncio
 import json
@@ -10,7 +10,7 @@ from typing import Optional
 
 # Setup import paths before anything else
 PROJECT_DIR = Path(__file__).parent
-sys.path.insert(0, str(PROJECT_DIR / "pt_hub_web" / "backend"))
+sys.path.insert(0, str(PROJECT_DIR / "fina_portal" / "backend"))
 sys.path.insert(0, str(PROJECT_DIR))
 
 from mcp.server.fastmcp import FastMCP
@@ -49,9 +49,9 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 mcp = FastMCP(
-    "stock-ai",
+    "fina-suite",
     instructions=(
-        "Stock AI Prediction server. Query stock prices, run LLM-powered analysis, "
+        "FINA Suite server. Query stock prices, run LLM-powered analysis, "
         "get AI prediction signals, manage portfolios, and access market intelligence. "
         "Use run_analysis for deep analysis (slow, calls LLM). Use get_technical_indicators "
         "or get_news for quick data. Portfolio tools manage real transaction records."
@@ -167,7 +167,7 @@ async def run_analysis(ticker: str) -> str:
     if engine.is_running:
         return _json({"error": "An analysis is already in progress", "current_ticker": engine.current_ticker})
     if not settings.llm_api_key:
-        return _json({"error": "LLM API key not configured (set PT_LLM_API_KEY)"})
+        return _json({"error": "LLM API key not configured (set FS_LLM_API_KEY)"})
     try:
         report = await engine.run_analysis(ticker)
         return _json(report)

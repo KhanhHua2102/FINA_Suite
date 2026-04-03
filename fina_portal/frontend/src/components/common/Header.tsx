@@ -9,7 +9,7 @@ export function Header({ connectionStatus }: HeaderProps) {
       style={{ borderBottom: '1px solid var(--border)' }}
     >
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>Stock AI Prediction</h1>
+        <h1 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>FINA Suite</h1>
       </div>
       <ConnectionIndicator status={connectionStatus} />
     </header>

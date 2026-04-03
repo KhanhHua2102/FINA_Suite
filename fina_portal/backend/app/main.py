@@ -37,7 +37,7 @@ async def verify_api_key(api_key: str = Security(API_KEY_HEADER)) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print(f"\n{'='*60}")
-    print("Stock AI Prediction — Hub API Started")
+    print("FINA Suite — API Started")
     print(f"Host: {settings.api_host}")
     print(f"Port: {settings.api_port}")
     print(f"API Key required: Yes (X-API-Key header)")
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Stock AI Prediction Hub",
+    title="FINA Suite",
     description="API for stock/ETF prediction system",
     version="2.0.0",
     lifespan=lifespan,

@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">Stock AI Prediction</h1>
+  <h1 align="center">FINA Suite</h1>
 </p>
 <p align="center">AI-powered stock prediction, portfolio management, and market analysis.</p>
 <p align="center">
@@ -11,7 +11,7 @@
 </p>
 
 <!-- Replace with actual screenshot once available -->
-<!-- [![Stock AI Prediction Dashboard](docs/screenshots/portfolio-dashboard.png)](#usage) -->
+<!-- [![FINA Suite Dashboard](docs/screenshots/portfolio-dashboard.png)](#usage) -->
 
 ---
 
@@ -19,23 +19,23 @@
 
 ```bash
 # Clone and run
-git clone https://github.com/your-username/Stock_AI_Prediction.git
-cd Stock_AI_Prediction
+git clone https://github.com/your-username/FINA_Suite.git
+cd FINA_Suite
 cp .env.example .env   # Add your API keys
 npm run dev            # Starts backend (:8000) + frontend (:8081)
 ```
 
 ```bash
 # Or set up manually
-cd pt_hub_web/backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt
-cd pt_hub_web/frontend && npm install
+cd fina_portal/backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+cd fina_portal/frontend && npm install
 
 # Or use Docker
-cd pt_hub_web && docker-compose up backend frontend
+cd fina_portal && docker-compose up backend frontend
 ```
 
 > [!TIP]
-> The app auto-generates an API key on first run if `PT_API_KEY` is not set in `.env`.
+> The app auto-generates an API key on first run if `FS_API_KEY` is not set in `.env`.
 
 ### Configuration
 
@@ -43,22 +43,22 @@ Create a `.env` file in the project root:
 
 ```bash
 # LLM provider (required — any OpenAI-compatible endpoint)
-PT_LLM_API_BASE=https://api.openai.com/v1
-PT_LLM_API_KEY=your-api-key
-PT_LLM_MODEL=gpt-4o
+FS_LLM_API_BASE=https://api.openai.com/v1
+FS_LLM_API_KEY=your-api-key
+FS_LLM_MODEL=gpt-4o
 
 # Market data APIs (optional — enables richer analysis)
-PT_FINNHUB_API_KEY=
-PT_FRED_API_KEY=
-PT_FMP_API_KEY=
-PT_POLYGON_API_KEY=
+FS_FINNHUB_API_KEY=
+FS_FRED_API_KEY=
+FS_FMP_API_KEY=
+FS_POLYGON_API_KEY=
 ```
 
 Settings can also be adjusted at runtime through the Settings tab in the UI.
 
 ### Features
 
-Stock AI Prediction ships with six main modules, each accessible as a tab in the dashboard:
+FINA Suite ships with six main modules, each accessible as a tab in the dashboard:
 
 - **Portfolio** — Track holdings, transactions, and dividends across stocks, ETFs, and crypto. Mean-variance optimization, rebalancing suggestions, performance analytics (Sharpe, drawdown, TWR), and CSV/Excel import.
 
@@ -75,7 +75,7 @@ Stock AI Prediction ships with six main modules, each accessible as a tab in the
 ### Architecture
 
 ```
-pt_hub_web/
+fina_portal/
 ├── backend/             FastAPI + Python
 │   ├── app/api/routes/  11 routers, 50+ endpoints
 │   └── app/services/    Business logic, DB, LLM engine
@@ -87,8 +87,8 @@ pt_hub_web/
 └── docker-compose.yml
 
 legacy/                  Original training & inference scripts
-├── pt_trainer.py        Neural model trainer
-└── pt_thinker.py        Signal generator & runner
+├── fina_trainer.py      Neural model trainer
+└── fina_thinker.py      Signal generator & runner
 
 data/                    SQLite databases, model weights, cache
 mcp_server.py            Claude MCP integration server
@@ -105,7 +105,7 @@ mcp_server.py            Claude MCP integration server
 
 ### MCP Server
 
-Stock AI Prediction includes an [MCP](https://modelcontextprotocol.io) server for Claude integration:
+FINA Suite includes an [MCP](https://modelcontextprotocol.io) server for Claude integration:
 
 ```bash
 python mcp_server.py

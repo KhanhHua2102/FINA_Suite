@@ -1,6 +1,6 @@
-# PowerTrader Hub Web
+# FINA Suite Portal
 
-A web-based dashboard for monitoring and controlling the PowerTrader cryptocurrency trading system.
+A web-based dashboard for monitoring and controlling the FINA Suite financial analysis system.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ A web-based dashboard for monitoring and controlling the PowerTrader cryptocurre
 ## Project Structure
 
 ```
-pt_hub_web/
+fina_portal/
 ├── backend/              # FastAPI backend
 │   ├── app/
 │   │   ├── api/          # API routes
@@ -38,7 +38,7 @@ pt_hub_web/
 ### 1. Backend Setup
 
 ```bash
-cd pt_hub_web
+cd fina_portal
 
 # Create and activate virtual environment
 python -m venv venv
@@ -59,7 +59,7 @@ The API will be available at `http://localhost:8001`.
 Open a new terminal:
 
 ```bash
-cd pt_hub_web/frontend
+cd fina_portal/frontend
 
 # Install dependencies
 npm install
@@ -72,20 +72,14 @@ The frontend will be available at `http://localhost:3000`.
 
 ### 3. Environment Configuration
 
-Create Kraken API credential files in the project root directory:
-
-```bash
-# In Crypto_Trading_PowerTrade/ (project root)
-echo "your_kraken_api_key" > kraken_key.txt
-echo "your_kraken_api_secret" > kraken_secret.txt
-```
+Create API credential files in the project root directory and configure environment variables with the `FS_` prefix in the `.env` file.
 
 ## Quick Start
 
 From the project root:
 
 ```bash
-./pt_hub_web/run.sh
+./run.sh
 ```
 
 This starts both backend and frontend in one terminal. Press Ctrl+C to stop.
@@ -94,7 +88,7 @@ This starts both backend and frontend in one terminal. Press Ctrl+C to stop.
 
 **Terminal 1 (Backend):**
 ```bash
-cd pt_hub_web
+cd fina_portal
 source venv/bin/activate
 cd backend
 uvicorn app.main:app --reload --port 8001
@@ -102,7 +96,7 @@ uvicorn app.main:app --reload --port 8001
 
 **Terminal 2 (Frontend):**
 ```bash
-cd pt_hub_web/frontend
+cd fina_portal/frontend
 npm run dev
 ```
 
@@ -111,7 +105,7 @@ npm run dev
 ### Development (without nginx)
 
 ```bash
-cd pt_hub_web
+cd fina_portal
 
 # Build and run backend + frontend
 docker-compose up backend frontend
@@ -123,7 +117,7 @@ docker-compose up backend frontend
 ### Production (with nginx reverse proxy)
 
 ```bash
-cd pt_hub_web
+cd fina_portal
 
 # Build and run all services including nginx
 docker-compose --profile production up -d
@@ -135,8 +129,8 @@ docker-compose --profile production up -d
 ### Docker Environment Variables
 
 The docker-compose.yml mounts the project directory and sets:
-- `PT_PROJECT_DIR=/project` - Path to project root inside container
-- `PT_HUB_DATA_DIR=/project/data/runtime` - Runtime data directory
+- `FS_PROJECT_DIR=/project` - Path to project root inside container
+- `FS_HUB_DATA_DIR=/project/data/runtime` - Runtime data directory
 
 ## API Endpoints
 
@@ -144,11 +138,8 @@ The docker-compose.yml mounts the project directory and sets:
 |----------|-------------|
 | `GET /api/health` | Health check |
 | `GET /api/settings` | Application settings |
-| `GET /api/account/portfolio` | Current portfolio (BTC + AUD) |
-| `GET /api/account/holding-history/{asset}` | Asset holding history |
-| `GET /api/account/kraken-trades` | Trade history from Kraken |
-| `GET /api/trading/processes` | Trading process status |
-| `GET /api/charts/candles/{coin}` | Price candles |
+| `GET /api/portfolio` | Portfolio management |
+| `GET /api/charts/candles/{ticker}` | Price candles |
 | `WS /api/ws` | WebSocket for real-time updates |
 
 ## Troubleshooting
@@ -167,8 +158,4 @@ Then update `frontend/vite.config.ts` to proxy to the new port.
 
 ### Rate Limit Errors
 
-If you see `EAPI:Rate limit exceeded` errors, wait a minute and retry. The backend has built-in retry logic with exponential backoff.
-
-### Invalid Nonce Errors
-
-If you encounter `EAPI:Invalid nonce` errors when fetching account data, click "Retry". This can happen when multiple API requests are made in quick succession.
+If you see rate limit errors, wait a minute and retry. The backend has built-in retry logic with exponential backoff.

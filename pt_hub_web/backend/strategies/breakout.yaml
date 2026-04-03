@@ -1,0 +1,19 @@
+name: Volume Breakout
+description: Identify breakout patterns with volume confirmation above resistance.
+priority: 3
+market_regimes: [bull, neutral]
+aliases: [breakout, volume]
+prompt_instructions: |
+  Focus your analysis on breakout patterns:
+  - Is the price approaching or breaking through key resistance levels?
+  - Is volume categorized as "heavy" (>1.5x average)?
+  - Look for consolidation patterns (tight range, shrink volume) followed by expansion
+    (price break + volume surge).
+
+  Only signal BUY on confirmed breakouts with:
+  - Volume category "heavy" (ratio > 1.5x average)
+  - Close above resistance, not just intraday pierce
+  - Bullish MACD direction confirming momentum
+
+  Set stop-loss just below the broken resistance (now support).
+  Be cautious of false breakouts with low volume confirmation.

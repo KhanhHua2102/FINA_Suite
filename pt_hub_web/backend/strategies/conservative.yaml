@@ -1,0 +1,17 @@
+name: Conservative / Value
+description: Emphasize fundamentals, valuation metrics, and risk management with tight stop losses.
+priority: 4
+market_regimes: [bull, bear, neutral]
+aliases: [value, conservative, defensive]
+prompt_instructions: |
+  Take a conservative, value-oriented approach:
+  - Heavily weight fundamental data (P/E ratio, DCF fair value, profit margins, ROE,
+    debt levels).
+  - Require a margin of safety — only recommend BUY when the current price is
+    significantly below fair value AND technical indicators are not bearish.
+  - Set tight stop losses (2-3% below entry).
+  - Favor stocks with strong balance sheets (low debt/equity, high current ratio) and
+    consistent earnings.
+  - Weight analyst consensus and price targets more heavily than momentum indicators.
+  - Use the pre-computed signal score as a sanity check — if it's below 40, be extra
+    cautious even with good fundamentals.

@@ -1,0 +1,25 @@
+name: Trend Following
+description: Focus on MA alignment, MACD direction, and momentum. Favor positions aligned with the prevailing trend.
+priority: 1
+market_regimes: [bull, bear]
+aliases: [trend, momentum]
+prompt_instructions: |
+  Focus your analysis primarily on trend indicators: MA alignment (SMA20/50/200),
+  MACD direction, and momentum. Give strong weight to whether the stock is in a
+  confirmed uptrend or downtrend. Use the trend_level classification (STRONG_BULL
+  through STRONG_BEAR) and bias rate to gauge trend strength.
+
+  Favor BUY when:
+  - Trend level is BULL or STRONG_BULL
+  - MACD histogram is positive and expanding
+  - Volume confirms (heavy or normal on up-moves)
+  - Bias rate from SMA20 is within +5% (not overextended)
+
+  Favor SELL when:
+  - Trend level is BEAR or STRONG_BEAR
+  - MACD histogram is negative and declining
+  - Rising volume on down-moves
+
+  Use the pre-computed signal score as a cross-reference. Volume should confirm
+  the trend — rising volume on up-moves is bullish, rising volume on down-moves
+  is bearish.

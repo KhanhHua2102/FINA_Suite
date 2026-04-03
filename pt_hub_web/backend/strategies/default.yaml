@@ -1,0 +1,5 @@
+name: Balanced Analysis
+description: Standard multi-factor analysis considering technicals, fundamentals, and sentiment equally.
+priority: 0
+market_regimes: [bull, bear, neutral]
+prompt_instructions: ""

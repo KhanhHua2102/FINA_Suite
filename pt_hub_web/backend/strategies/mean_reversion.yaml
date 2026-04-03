@@ -1,0 +1,16 @@
+name: Mean Reversion
+description: Look for oversold/overbought conditions using RSI and support/resistance levels.
+priority: 2
+market_regimes: [neutral, bear]
+aliases: [reversion, rsi]
+prompt_instructions: |
+  Focus your analysis on mean-reversion signals:
+  - RSI extremes across multiple periods (RSI-6 for short-term, RSI-14 for standard,
+    RSI-24 for medium-term). Oversold (<30) = potential buy, overbought (>70) = potential sell.
+  - Bias rate: when bias_20 exceeds +/-5%, price is overextended from SMA20 and likely
+    to revert. Use bias_5 and bias_10 to gauge shorter-term deviation.
+  - Proximity to key support/resistance levels.
+
+  Favor BUY near strong support with oversold RSI and negative bias rate (below SMA).
+  Favor SELL near strong resistance with overbought RSI and large positive bias rate.
+  Set tight targets at the mean (moving average) rather than momentum-based targets.

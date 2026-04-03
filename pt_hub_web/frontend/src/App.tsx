@@ -9,6 +9,7 @@ import { PredictionsTab } from './components/predictions/PredictionsTab';
 import { AnalysisTab } from './components/analysis/AnalysisTab';
 import { PortfolioTab } from './components/portfolio/PortfolioTab';
 import { PropertyTab } from './components/property/PropertyTab';
+import { ExpensesTab } from './components/expenses/ExpensesTab';
 import { Sidebar } from './components/common/Sidebar';
 import { SettingsModal } from './components/common/SettingsModal';
 
@@ -19,6 +20,7 @@ const TAB_LABELS: Record<string, string> = {
   analysis: 'Analysis',
   portfolio: 'Portfolio',
   property: 'Property',
+  expenses: 'Expenses',
 };
 
 const TAB_COMPONENTS: Record<string, React.FC> = {
@@ -28,6 +30,7 @@ const TAB_COMPONENTS: Record<string, React.FC> = {
   analysis: AnalysisTab,
   portfolio: PortfolioTab,
   property: PropertyTab,
+  expenses: ExpensesTab,
 };
 
 function App() {
@@ -47,7 +50,7 @@ function App() {
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio' | 'property')}
+        onTabChange={(tab) => setActiveTab(tab as 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio' | 'property' | 'expenses')}
         connectionStatus={status}
         onSettingsClick={() => setShowSettings(true)}
       />

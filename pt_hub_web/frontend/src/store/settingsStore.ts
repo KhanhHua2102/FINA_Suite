@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import type { Settings } from '../services/types';
 
 type ChartMode = string;
-type TabId = 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio' | 'property';
+type TabId = 'training' | 'predictions' | 'charts' | 'analysis' | 'portfolio' | 'property' | 'expenses';
 
-const DEFAULT_TAB_ORDER: TabId[] = ['training', 'predictions', 'charts', 'analysis', 'portfolio', 'property'];
+const DEFAULT_TAB_ORDER: TabId[] = ['training', 'predictions', 'charts', 'analysis', 'portfolio', 'property', 'expenses'];
 
 interface SettingsState {
   settings: Settings | null;

@@ -34,6 +34,15 @@ import type {
   MarketReview,
   BacktestResult,
   BacktestSummary,
+  QuickVerification,
+  Expense,
+  ExpenseCategory,
+  Receipt,
+  ReceiptExtraction,
+  ExpenseStatistics,
+  TaxSummary,
+  TaxRule,
+  TaxAnalysisResult,
 } from './types';
 
 const API_BASE = '/api';
@@ -199,6 +208,9 @@ export const backtestApi = {
 
   getResultForReport: (reportId: number) =>
     fetchJson<{ result: BacktestResult | null }>(`/backtest/results/${reportId}`),
+
+  verify: (reportId: number) =>
+    fetchJson<{ result: QuickVerification | null }>(`/backtest/verify/${reportId}`),
 };
 
 // Portfolio endpoints
@@ -455,6 +467,132 @@ export const propertyApi = {
       `/property/favorite-suburbs/${encodeURIComponent(suburb)}/${state}`,
       { method: 'DELETE' },
     ),
+};
+
+// Expense endpoints
+export const expensesApi = {
+  list: (params: {
+    tax_year?: string; category_id?: number; date_from?: string; date_to?: string;
+    search?: string; is_income?: boolean; limit?: number; offset?: number;
+  } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.tax_year) qs.set('tax_year', params.tax_year);
+    if (params.category_id != null) qs.set('category_id', String(params.category_id));
+    if (params.date_from) qs.set('date_from', params.date_from);
+    if (params.date_to) qs.set('date_to', params.date_to);
+    if (params.search) qs.set('search', params.search);
+    if (params.is_income != null) qs.set('is_income', String(params.is_income));
+    if (params.limit != null) qs.set('limit', String(params.limit));
+    if (params.offset != null) qs.set('offset', String(params.offset));
+    const q = qs.toString();
+    return fetchJson<{ expenses: Expense[]; total: number }>(`/expenses${q ? `?${q}` : ''}`);
+  },
+
+  get: (id: number) => fetchJson<Expense>(`/expenses/${id}`),
+
+  checkDuplicates: (date: string, amountCents: number, gstCents: number = 0) =>
+    fetchJson<{ duplicates: Expense[] }>(
+      `/expenses/check-duplicates?date=${encodeURIComponent(date)}&amount_cents=${amountCents}&gst_cents=${gstCents}`
+    ),
+
+  create: (data: Partial<Expense>) =>
+    fetchJson<{ id: number }>('/expenses', { method: 'POST', body: JSON.stringify(data) }),
+
+  update: (id: number, data: Partial<Expense>) =>
+    fetchJson<{ status: string }>(`/expenses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  delete: (id: number) =>
+    fetchJson<{ status: string }>(`/expenses/${id}`, { method: 'DELETE' }),
+
+  batchDelete: (ids: number[]) =>
+    fetchJson<{ status: string; count: number }>('/expenses/batch-delete', {
+      method: 'POST', body: JSON.stringify({ ids }),
+    }),
+
+  batchDownloadReceipts: async (ids: number[]) => {
+    const response = await fetch(`${API_BASE}/expenses/batch-download-receipts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(error.detail || 'Download failed');
+    }
+    return response.blob();
+  },
+
+  // Categories
+  getCategories: () =>
+    fetchJson<{ categories: ExpenseCategory[] }>('/expenses/categories'),
+
+  createCategory: (data: Partial<ExpenseCategory>) =>
+    fetchJson<{ id: number }>('/expenses/categories', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateCategory: (id: number, data: Partial<ExpenseCategory>) =>
+    fetchJson<{ status: string }>(`/expenses/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  deleteCategory: (id: number) =>
+    fetchJson<{ status: string }>(`/expenses/categories/${id}`, { method: 'DELETE' }),
+
+  // Receipts
+  uploadReceipt: async (file: File): Promise<{ receipt_id: number; extraction: ReceiptExtraction | null; error?: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE}/expenses/receipts/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(error.detail || 'Receipt upload failed');
+    }
+    return response.json();
+  },
+
+  getReceipt: (id: number) => fetchJson<Receipt>(`/expenses/receipts/${id}`),
+
+  getReceiptFileUrl: (id: number) => `${API_BASE}/expenses/receipts/${id}/file`,
+
+  getReceiptThumbnailUrl: (id: number) => `${API_BASE}/expenses/receipts/${id}/thumbnail`,
+
+  reprocessReceipt: (id: number) =>
+    fetchJson<{ receipt_id: number; extraction: ReceiptExtraction | null; error?: string }>(
+      `/expenses/receipts/${id}/reprocess`, { method: 'POST' }
+    ),
+
+  // Statistics & Tax
+  getStatistics: (taxYear?: string) => {
+    const q = taxYear ? `?tax_year=${encodeURIComponent(taxYear)}` : '';
+    return fetchJson<ExpenseStatistics>(`/expenses/statistics${q}`);
+  },
+
+  getTaxSummary: (taxYear?: string) => {
+    const q = taxYear ? `?tax_year=${encodeURIComponent(taxYear)}` : '';
+    return fetchJson<TaxSummary>(`/expenses/tax-summary${q}`);
+  },
+
+  getBasSummary: (quarter?: string) => {
+    const q = quarter ? `?quarter=${encodeURIComponent(quarter)}` : '';
+    return fetchJson<TaxSummary>(`/expenses/bas-summary${q}`);
+  },
+
+  runTaxAnalysis: (taxYear?: string) =>
+    fetchJson<TaxAnalysisResult>('/expenses/tax-analysis', {
+      method: 'POST',
+      body: JSON.stringify({ tax_year: taxYear || null }),
+    }),
+
+  getTaxRules: (taxYear?: string) => {
+    const q = taxYear ? `?tax_year=${encodeURIComponent(taxYear)}` : '';
+    return fetchJson<{ rules: TaxRule[] }>(`/expenses/tax-rules${q}`);
+  },
+
+  // Export
+  exportCsv: (taxYear?: string) => {
+    const q = taxYear ? `?tax_year=${encodeURIComponent(taxYear)}` : '';
+    return `${API_BASE}/expenses/export${q}`;
+  },
 };
 
 // Health check

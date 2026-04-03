@@ -42,13 +42,20 @@ class Settings(BaseSettings):
     # LLM Analysis (9router - OpenAI-compatible)
     llm_api_base: str = "https://api.9router.com/v1"
     llm_api_key: Optional[str] = None  # PT_LLM_API_KEY env var
-    llm_model: str = "cc/claude-opus-4-6"
-    llm_fallback_models: List[str] = ["cc/claude-sonnet-4-6"]
+    llm_model: str = "Stock-Analysis"
+    llm_fallback_models: List[str] = ["cc/claude-opus-4-6", "cc/claude-sonnet-4-6"]
     llm_max_tokens: int = 2000
+
+    # LLM for receipt/expense extraction (OmniRoute combo)
+    expense_llm_model: str = "Receipt-Tax"
+    expense_llm_fallback_models: List[str] = []
+
     analysis_db_path: Path = Path("")
     runtime_db_path: Path = Path("")
     portfolio_db_path: Path = Path("")
     property_db_path: Path = Path("")
+    expense_db_path: Path = Path("")
+    receipts_dir: Path = Path("")
     sec_user_agent: str = "StockAIPrediction/1.0 (<REDACTED_EMAIL>)"
 
     # Phase 2 API keys (set via PT_FINNHUB_API_KEY, PT_FRED_API_KEY, PT_TWELVEDATA_API_KEY)
@@ -89,6 +96,12 @@ class Settings(BaseSettings):
 
         if not self.property_db_path or str(self.property_db_path) == ".":
             self.property_db_path = self.project_dir / "data" / "property.db"
+
+        if not self.expense_db_path or str(self.expense_db_path) == ".":
+            self.expense_db_path = self.project_dir / "data" / "expenses.db"
+
+        if not self.receipts_dir or str(self.receipts_dir) == ".":
+            self.receipts_dir = self.project_dir / "data" / "receipts"
 
     def _setup_api_key(self):
         """Setup API key for authentication."""
@@ -172,3 +185,9 @@ portfolio_db = PortfolioDB(settings.portfolio_db_path)
 
 from app.services.property_db import PropertyDB
 property_db = PropertyDB(settings.property_db_path)
+
+from app.services.expense_db import ExpenseDB
+expense_db = ExpenseDB(settings.expense_db_path)
+
+from app.services.receipt_processor import ReceiptProcessor
+receipt_processor = ReceiptProcessor(settings.receipts_dir, expense_db)

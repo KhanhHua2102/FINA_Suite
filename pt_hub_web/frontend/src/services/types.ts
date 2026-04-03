@@ -69,10 +69,11 @@ export interface AnalysisReport {
   current_price: number;
   price_change_pct: number;
   indicators: {
-    ma_alignment: { sma20: number | null; sma50: number | null; sma200: number | null; status: string };
-    rsi: { value: number | null; zone: string };
+    ma_alignment: { sma20: number | null; sma50: number | null; sma200: number | null; status: string; trend_level?: string };
+    rsi: { value: number | null; zone: string; rsi_6?: number | null; rsi_24?: number | null };
     macd: { signal: number | null; histogram: number | null; direction: string };
-    volume: { current: number; average: number; ratio: number };
+    bias_rate?: { bias_5: number | null; bias_10: number | null; bias_20: number | null };
+    volume: { current: number; average: number; ratio: number; category?: string };
     support: number[];
     resistance: number[];
     price_range_52w: { high: number; low: number };
@@ -88,6 +89,19 @@ export interface AnalysisReport {
   };
   checklist: { item: string; passed: boolean }[];
   news?: { headline: string; source: string; datetime: number; url?: string }[];
+  trend_analysis?: {
+    signal_score: number;
+    trend_status: string;
+    score_breakdown: Record<string, number>;
+    reasons: string[];
+    risks: string[];
+  };
+  battle_plan?: {
+    entry_strategy: string;
+    exit_strategy: string;
+    risk_management: string;
+  };
+  time_horizon?: string;
   raw_reasoning?: string;
   model_used?: string;
   strategy?: string;
@@ -97,6 +111,17 @@ export interface AnalysisStrategy {
   key: string;
   name: string;
   description: string;
+  market_regimes?: string[];
+}
+
+export interface QuickVerification {
+  report_id: number;
+  ticker: string;
+  analysis_date: string;
+  direction_correct: boolean;
+  return_pct: number;
+  next_day_close: number;
+  decision: string;
 }
 
 export interface BacktestResult {
@@ -406,6 +431,135 @@ export interface PropertyDashboardSummary {
   gross_yield_pct: number;
   total_loan_amount: number;
   total_loan_repayment_monthly: number;
+}
+
+// Expense types
+export interface ExpenseCategory {
+  id: number;
+  code: string;
+  name: string;
+  color: string;
+  type: 'income' | 'expense';
+  tax_deductible: boolean;
+  ato_category: string | null;
+  llm_prompt: string | null;
+  sort_order: number;
+}
+
+export interface Expense {
+  id: number;
+  date: string;
+  merchant: string | null;
+  description: string | null;
+  amount_cents: number;
+  currency: string;
+  category_id: number | null;
+  category_code?: string | null;
+  category_name?: string | null;
+  category_color?: string | null;
+  ato_category?: string | null;
+  gst_cents: number;
+  is_income: boolean;
+  tax_deductible: boolean;
+  deduction_pct: number;
+  tax_year: string | null;
+  bas_quarter: string | null;
+  receipt_id: number | null;
+  project: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Receipt {
+  id: number;
+  filename: string;
+  original_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  thumbnail_path: string | null;
+  ai_extracted: Record<string, unknown> | null;
+  status: 'pending' | 'processing' | 'done' | 'error';
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface ReceiptExtraction {
+  merchant: string;
+  date: string;
+  amount: number;
+  currency: string;
+  gst: number;
+  description: string;
+  category_suggestion: string;
+  line_items: { description: string; quantity: number; unit_price: number; total: number }[];
+  abn: string | null;
+  payment_method: string | null;
+  is_tax_invoice: boolean;
+}
+
+export interface ExpenseStatistics {
+  tax_year: string;
+  total_income: number;
+  total_expense: number;
+  total_deductions: number;
+  total_gst: number;
+  count: number;
+  by_category: {
+    id: number;
+    code: string;
+    name: string;
+    color: string;
+    type: string;
+    ato_category: string | null;
+    total_cents: number;
+    count: number;
+  }[];
+  monthly: { month: string; income_cents: number; expense_cents: number }[];
+}
+
+export interface TaxSummary {
+  tax_year: string;
+  total_income_cents: number;
+  total_deductions_cents: number;
+  by_ato_category: {
+    ato_category: string;
+    category_name: string;
+    total_cents: number;
+    items: number;
+  }[];
+  gst_collected_cents: number;
+  gst_paid_cents: number;
+  gst_net_cents: number;
+  rules: TaxRule[];
+}
+
+export interface TaxRule {
+  id: number;
+  category_code: string;
+  rule_name: string;
+  description: string;
+  max_amount_cents: number | null;
+  requires_records: boolean;
+  ato_reference: string;
+  tax_year: string;
+}
+
+export interface TaxAnalysisResult {
+  tax_year: string;
+  summary: string;
+  estimated_tax_savings?: number;
+  total_valid_deductions?: number;
+  recommendations: string[];
+  warnings: string[];
+  missed_deductions: string[];
+  by_category: {
+    ato_category: string;
+    category_name: string;
+    amount: number;
+    status: 'valid' | 'review' | 'warning';
+    notes: string;
+  }[];
 }
 
 // WebSocket event types

@@ -15,7 +15,10 @@ interface DuplicateMatch {
   category_name?: string | null;
 }
 
+let nextItemId = 0;
+
 interface ScannedItem {
+  id: number;
   file: File;
   receiptId: number | null;
   extraction: ReceiptExtraction | null;
@@ -70,6 +73,7 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
 
     // Create pending items
     const newItems: ScannedItem[] = files.map(file => ({
+      id: nextItemId++,
       file,
       receiptId: null,
       extraction: null,
@@ -91,10 +95,10 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
 
     // Process each file sequentially
     for (let i = 0; i < newItems.length; i++) {
-      const idx = items.length + i; // position in the full list
+      const itemId = newItems[i].id;
 
-      setItems(prev => prev.map((item, j) =>
-        j === idx ? { ...item, status: 'uploading' } : item
+      setItems(prev => prev.map(item =>
+        item.id === itemId ? { ...item, status: 'uploading' } : item
       ));
 
       try {
@@ -115,8 +119,8 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
           }
         }
 
-        setItems(prev => prev.map((item, j) =>
-          j === idx ? {
+        setItems(prev => prev.map(item =>
+          item.id === itemId ? {
             ...item,
             receiptId: result.receipt_id,
             extraction: ext,
@@ -133,8 +137,8 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
           } : item
         ));
       } catch (e) {
-        setItems(prev => prev.map((item, j) =>
-          j === idx ? {
+        setItems(prev => prev.map(item =>
+          item.id === itemId ? {
             ...item,
             status: 'error',
             error: e instanceof Error ? e.message : 'Upload failed',
@@ -144,7 +148,7 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
     }
 
     setProcessing(false);
-  }, [items.length, fetchCategories]);
+  }, [fetchCategories]);
 
   // Process files dropped from parent ExpensesTab
   useEffect(() => {
@@ -357,7 +361,7 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
       {/* Scanned items list */}
       {items.map((item, idx) => (
         <div
-          key={idx}
+          key={item.id}
           className="rounded-xl p-4 space-y-3"
           style={{
             background: '#1e1e22',
@@ -408,7 +412,9 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
                     title="Click to preview"
                     onClick={() => {
                       setPreviewReceiptId(item.receiptId);
-                      setPreviewFilename(item.file.name);
+                      const ext = item.file.name.split('.').pop()?.toLowerCase() || '';
+                      const displayName = [item.description || item.merchant, item.date].filter(Boolean).join(' ');
+                      setPreviewFilename(displayName ? `${displayName}.${ext}` : item.file.name);
                       const name = [item.description || item.merchant || 'receipt', item.date].filter(Boolean).join(' ');
                       setPreviewDownloadName(name.replace(/[/\\:*?"<>|]/g, '_'));
                     }}
@@ -439,8 +445,8 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
                   <div>
                     <label className="text-xs mb-0.5 block" style={{ color: '#71717a' }}>Amount ($)</label>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={item.amount}
                       onChange={e => updateItem(idx, { amount: e.target.value })}
                       className="w-full px-2 py-1 rounded-lg text-sm"
@@ -450,8 +456,8 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
                   <div>
                     <label className="text-xs mb-0.5 block" style={{ color: '#71717a' }}>GST ($)</label>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={item.gst}
                       onChange={e => updateItem(idx, { gst: e.target.value })}
                       className="w-full px-2 py-1 rounded-lg text-sm"
@@ -532,9 +538,9 @@ export function ReceiptScanner({ initialFiles, onFilesConsumed }: ReceiptScanner
                     <Button
                       size="sm"
                       variant="light"
-                      onClick={() => updateItem(idx, { duplicates: [] })}
+                      onClick={() => removeItem(idx)}
                     >
-                      Cancel
+                      Dismiss
                     </Button>
                   </div>
                 </div>

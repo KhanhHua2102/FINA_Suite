@@ -1504,4 +1504,41 @@ class AnalysisEngine:
         return result
 
 
+    async def run_as_agent(self, ticker: str, strategy: str = "default") -> dict:
+        """Run the full FINA analysis pipeline and return an AgentSignal-compatible dict."""
+        report = await self.run_analysis(ticker, strategy)
+        if not report or "error" in report:
+            return {
+                "agent_id": "fina_analyst",
+                "agent_name": "FINA Analyst",
+                "category": "technical",
+                "signal": "neutral",
+                "confidence": 0.0,
+                "reasoning": report.get("error", "Analysis failed") if report else "Analysis failed",
+                "key_factors": [],
+                "max_position_pct": 0.0,
+            }
+
+        decision = report.get("decision", "HOLD")
+        signal_map = {"BUY": "bullish", "SELL": "bearish", "HOLD": "neutral"}
+        score = report.get("score", 50)
+
+        reasons = []
+        ta = report.get("trend_analysis", {})
+        if ta:
+            reasons.extend(ta.get("reasons", []))
+            reasons.extend([f"RISK: {r}" for r in ta.get("risks", [])])
+
+        return {
+            "agent_id": "fina_analyst",
+            "agent_name": "FINA Analyst",
+            "category": "technical",
+            "signal": signal_map.get(decision, "neutral"),
+            "confidence": round(score / 100, 2),
+            "reasoning": report.get("conclusion", ""),
+            "key_factors": reasons[:6],
+            "max_position_pct": 0.15,
+        }
+
+
 analysis_engine = AnalysisEngine()

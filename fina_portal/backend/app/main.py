@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.services.process_manager import process_manager
-from app.api.routes import trading, training, charts, predictions, settings as settings_routes, analysis, portfolio, property, market, backtest, expenses
+from app.api.routes import trading, training, charts, predictions, settings as settings_routes, analysis, portfolio, property, market, backtest, expenses, agents, multi_agent_analysis
 from app.api.websocket import router as ws_router
 
 
@@ -166,6 +166,8 @@ app.include_router(
     tags=["Expenses"],
     dependencies=[Depends(verify_api_key)],
 )
+app.include_router(agents.router, prefix="/api/agents", tags=["agents"], dependencies=[Depends(verify_api_key)])
+app.include_router(multi_agent_analysis.router, prefix="/api/analysis/multi-agent", tags=["multi-agent"], dependencies=[Depends(verify_api_key)])
 app.include_router(ws_router)
 
 

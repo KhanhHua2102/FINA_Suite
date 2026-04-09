@@ -67,7 +67,10 @@ class Settings(BaseSettings):
     fmp_api_key: Optional[str] = None
     polygon_api_key: Optional[str] = None
 
-
+    # Multi-agent analysis
+    agents_dir: Path = Path("")
+    financial_datasets_api_key: Optional[str] = None  # FINANCIAL_DATASETS_API_KEY env var
+    financial_datasets_api_base: str = "https://api.financialdatasets.ai"
 
     model_config = SettingsConfigDict(
         env_prefix="FS_",
@@ -80,6 +83,9 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         self._load_gui_settings()
         self._setup_api_key()
+
+        if not self.agents_dir or str(self.agents_dir) == ".":
+            self.agents_dir = self.project_dir / "fina_portal" / "backend" / "app" / "agents"
 
         # Set default hub_data_dir if not specified
         if not self.hub_data_dir or str(self.hub_data_dir) == ".":

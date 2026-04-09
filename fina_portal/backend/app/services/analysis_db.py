@@ -92,6 +92,34 @@ class AnalysisDB:
                     ON backtest_results(report_id);
             """)
 
+            # Multi-agent reports table
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS multi_agent_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    selected_agents TEXT NOT NULL,
+                    portfolio_context TEXT,
+                    agent_signals TEXT NOT NULL,
+                    debate_occurred INTEGER DEFAULT 0,
+                    debate_rounds TEXT,
+                    risk_assessment TEXT,
+                    risk_reasoning TEXT,
+                    consensus_action TEXT NOT NULL,
+                    consensus_confidence REAL NOT NULL,
+                    consensus_reasoning TEXT,
+                    recommendation TEXT,
+                    market_data_summary TEXT,
+                    model_used TEXT,
+                    total_duration_ms INTEGER,
+                    price_at_analysis REAL,
+                    backtested INTEGER DEFAULT 0
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_mar_ticker ON multi_agent_reports(ticker)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_mar_created ON multi_agent_reports(created_at)")
+
     def insert_report(self, report: dict) -> int:
         with self._lock, self._conn() as conn:
             cur = conn.execute(
@@ -298,6 +326,80 @@ class AnalysisDB:
                 tuple(params),
             ).fetchall()
             return [self._row_to_dict(r) for r in rows]
+
+    # --- Multi-agent reports ---
+
+    def insert_multi_agent_report(self, report: dict) -> int:
+        with self._lock, self._conn() as conn:
+            cur = conn.execute(
+                """INSERT INTO multi_agent_reports
+                   (ticker, selected_agents, portfolio_context, agent_signals,
+                    debate_occurred, debate_rounds, risk_assessment, risk_reasoning,
+                    consensus_action, consensus_confidence, consensus_reasoning,
+                    recommendation, market_data_summary, model_used,
+                    total_duration_ms, price_at_analysis, backtested)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    report["ticker"],
+                    json.dumps(report.get("selected_agents")),
+                    json.dumps(report.get("portfolio_context")),
+                    json.dumps(report.get("agent_signals")),
+                    1 if report.get("debate_occurred") else 0,
+                    json.dumps(report.get("debate_rounds")),
+                    json.dumps(report.get("risk_assessment")),
+                    report.get("risk_reasoning"),
+                    report["consensus_action"],
+                    report["consensus_confidence"],
+                    report.get("consensus_reasoning"),
+                    json.dumps(report.get("recommendation")),
+                    json.dumps(report.get("market_data_summary")),
+                    report.get("model_used"),
+                    report.get("total_duration_ms"),
+                    report.get("price_at_analysis"),
+                    1 if report.get("backtested") else 0,
+                ),
+            )
+            return cur.lastrowid
+
+    def get_multi_agent_reports(self, ticker: str, limit: int = 20, offset: int = 0) -> tuple[list, int]:
+        with self._lock, self._conn() as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM multi_agent_reports WHERE ticker = ?",
+                (ticker,),
+            ).fetchone()[0]
+            rows = conn.execute(
+                """SELECT * FROM multi_agent_reports
+                   WHERE ticker = ? ORDER BY created_at DESC
+                   LIMIT ? OFFSET ?""",
+                (ticker, limit, offset),
+            ).fetchall()
+            return [self._ma_row_to_dict(r) for r in rows], total
+
+    def get_multi_agent_report(self, report_id: int) -> Optional[dict]:
+        with self._lock, self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM multi_agent_reports WHERE id = ?",
+                (report_id,),
+            ).fetchone()
+            return self._ma_row_to_dict(row) if row else None
+
+    def get_latest_multi_agent_report(self, ticker: str) -> Optional[dict]:
+        with self._lock, self._conn() as conn:
+            row = conn.execute(
+                """SELECT * FROM multi_agent_reports
+                   WHERE ticker = ? ORDER BY created_at DESC LIMIT 1""",
+                (ticker,),
+            ).fetchone()
+            return self._ma_row_to_dict(row) if row else None
+
+    @staticmethod
+    def _ma_row_to_dict(row: sqlite3.Row) -> dict:
+        d = dict(row)
+        for key in ("selected_agents", "portfolio_context", "agent_signals",
+                    "debate_rounds", "risk_assessment", "recommendation", "market_data_summary"):
+            if d.get(key):
+                d[key] = json.loads(d[key])
+        return d
 
     @staticmethod
     def _market_row_to_dict(row: sqlite3.Row) -> dict:

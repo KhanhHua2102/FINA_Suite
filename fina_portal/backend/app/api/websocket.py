@@ -157,6 +157,43 @@ analysis_engine.register_complete_callback(on_analysis_complete)
 analysis_engine.register_cancel_callback(on_analysis_cancelled)
 
 
+# Multi-agent engine callbacks
+from app.services.multi_agent_engine import multi_agent_engine
+
+
+def on_multi_agent_log(message: str, tickers: list[str] | None = None):
+    _schedule_broadcast(
+        manager.broadcast("analysis_logs", {
+            "type": "multi_agent_log",
+            "message": message,
+            "tickers": tickers,
+        })
+    )
+
+
+def on_multi_agent_complete(reports: list[dict]):
+    _schedule_broadcast(
+        manager.broadcast("analysis_logs", {
+            "type": "multi_agent_complete",
+            "data": reports,
+        })
+    )
+
+
+def on_multi_agent_cancel(tickers: list[str]):
+    _schedule_broadcast(
+        manager.broadcast("analysis_logs", {
+            "type": "multi_agent_cancelled",
+            "tickers": tickers,
+        })
+    )
+
+
+multi_agent_engine.register_log_callback(on_multi_agent_log)
+multi_agent_engine.register_complete_callback(on_multi_agent_complete)
+multi_agent_engine.register_cancel_callback(on_multi_agent_cancel)
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,

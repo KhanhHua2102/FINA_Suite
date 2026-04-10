@@ -152,6 +152,9 @@ def on_analysis_cancelled(ticker: str):
     }))
 
 
+analysis_engine._log_callbacks.clear()
+analysis_engine._complete_callbacks.clear()
+analysis_engine._cancel_callbacks.clear()
 analysis_engine.register_log_callback(on_analysis_log)
 analysis_engine.register_complete_callback(on_analysis_complete)
 analysis_engine.register_cancel_callback(on_analysis_cancelled)
@@ -189,6 +192,9 @@ def on_multi_agent_cancel(tickers: list[str]):
     )
 
 
+multi_agent_engine._log_callbacks.clear()
+multi_agent_engine._complete_callbacks.clear()
+multi_agent_engine._cancel_callbacks.clear()
 multi_agent_engine.register_log_callback(on_multi_agent_log)
 multi_agent_engine.register_complete_callback(on_multi_agent_complete)
 multi_agent_engine.register_cancel_callback(on_multi_agent_cancel)
